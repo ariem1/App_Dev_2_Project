@@ -1,4 +1,7 @@
 import 'package:aura_journal/pages/journal_page.dart';
+import 'package:aura_journal/pages/main_page.dart';
+import 'package:aura_journal/pages/to_do_page.dart';
+
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
@@ -98,6 +101,36 @@ class _HomePageState extends State<HomePage> {
           .add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
     });
   }
+
+
+  int _selectedMood = 4; //happy as defualt
+
+  Icon _buildIcon(int index) {
+    switch (index) {
+      case 0:
+        return Icon(Icons.sentiment_very_dissatisfied); // Lowest rating
+      case 1:
+        return Icon(Icons.sentiment_dissatisfied); // Moderate-low rating
+      case 2:
+        return Icon(Icons.sentiment_neutral); // Neutral rating
+      case 3:
+        return Icon(Icons.sentiment_satisfied); // Moderate-high rating
+      case 4:
+        return Icon(Icons.sentiment_very_satisfied); // Highest rating
+      default:
+        return Icon(Icons.star_border); // Default icon
+    }
+  }
+
+  Icon _moodToDisplay(int index) {
+    return Icon(
+      _buildIcon(index).icon,
+      size: 70,
+    );
+  }
+
+
+  bool showToDoPage = false;
 
   final PageController _pageController = PageController(initialPage: 0);
 
@@ -216,16 +249,20 @@ class _HomePageState extends State<HomePage> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('DATA'),
           Container(
             margin: EdgeInsets.only(top: 5),
-            padding: EdgeInsets.only(top: 5),
+            padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+            decoration: BoxDecoration(
+                border: Border(
+              bottom: BorderSide(color: Colors.black12, width: 1),
+            )),
             child: Row(
               children: [
                 Icon(Icons.water_drop_outlined, size: 70),
                 Container(
-                  margin: EdgeInsets.only(left: 3),
-                  width: 250,
+                  //  padding: EdgeInsets.only(bottom: 10),
+                  margin: EdgeInsets.only(left: 10),
+                  width: 230,
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -242,6 +279,112 @@ class _HomePageState extends State<HomePage> {
               ],
             ),
           ),
+          Container(
+            margin: EdgeInsets.only(top: 10),
+            padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+            decoration: BoxDecoration(
+                border: Border(
+              bottom: BorderSide(color: Colors.black12, width: 1),
+            )),
+            child: Row(
+              children: [
+                _moodToDisplay(_selectedMood),
+                Container(
+                  //  padding: EdgeInsets.only(bottom: 10),
+                  margin: EdgeInsets.only(left: 10),
+                  width: 250,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Today's Mood"),
+                      SizedBox(height: 10),
+                      Row(
+                        children: List.generate(5, (index) {
+                          return IconButton(
+                            icon: _buildIcon(index),
+                            onPressed: () {
+                              setState(() {
+                                _selectedMood = index;
+                              });
+                            },
+                            color: _selectedMood == index
+                                ? Colors.deepPurple
+                                : null,
+                          );
+                        }),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            margin: EdgeInsets.only(top: 5),
+            padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+            decoration: BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                )),
+            child: Row(
+              children: [
+                Icon(Icons.water_drop_outlined, size: 70),
+                Container(
+                  //  padding: EdgeInsets.only(bottom: 10),
+                  margin: EdgeInsets.only(left: 10),
+                  width: 230,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Budget"),
+                      SizedBox(height: 10),
+                      Row(children: [
+                        Text("Balance: \$"),
+                       // TextField(),
+
+                      ]),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: _addDroplet,
+                ),
+              ],
+            ),
+          ),
+          Container(
+            // PAGE INDICATORSS
+            padding: const EdgeInsets.all(8.0),
+
+            child: Row(
+              //mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                // Filled circle
+                Container(
+                  width: 12,
+                  height: 10,
+                  decoration: const BoxDecoration(
+                    color: Colors.black, // Filled circle color
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                // Unfilled circle
+                Container(
+                  width: 12,
+                  height: 10,
+                  decoration: BoxDecoration(
+                    color: Colors.grey,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+
         ],
       ),
     );
@@ -252,7 +395,7 @@ class _HomePageState extends State<HomePage> {
       child: Container(
         // TO DO CONTAINER
         height: 330,
-        //margin: EdgeInsets.only(top: 10),
+        margin: EdgeInsets.only(top: 10),
         //padding: const EdgeInsets.all(10),
         // decoration: BoxDecoration(
         //  // color: Colors.green,
@@ -283,6 +426,10 @@ class _HomePageState extends State<HomePage> {
                     onTap: () {
                       //CHANGE - NAVIGATE TO TO DO VIEW
                       print("View To Do !");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => ToDoPage()),
+                      );
                     },
                     child: Text(
                       'View',
@@ -330,7 +477,8 @@ class _HomePageState extends State<HomePage> {
                 ],
               ),
             ),
-            Container( // PAGE INDICATORSS
+            Container(
+              // PAGE INDICATORSS
               padding: const EdgeInsets.all(8.0),
 
               child: Row(

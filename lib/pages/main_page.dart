@@ -2,16 +2,18 @@ import 'home_page.dart';
 import 'package:aura_journal/pages/mood_page.dart';
 import 'package:aura_journal/pages/budget_page.dart';
 import 'package:aura_journal/pages/water_page.dart';
-
+import 'package:aura_journal/pages/to_do_page.dart';
 import 'package:flutter/material.dart';
 import 'nav_bar.dart';
 
 class MainPage extends StatefulWidget {
+
   const MainPage({super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
+
 
 class _MainPageState extends State<MainPage> {
   final PageController controller = PageController(); // Initialize PageController
@@ -19,10 +21,11 @@ class _MainPageState extends State<MainPage> {
 
   final List<Widget> pages = [
     const HomePage(),
-    const MoodPage(), // Ensure MoodPage is in the list
+    const MoodPage(),
     const BudgetPage(),
     const WaterPage(),
   ];
+ // Control flag to show ToDoPage
 
   @override
   Widget build(BuildContext context) {
@@ -32,14 +35,14 @@ class _MainPageState extends State<MainPage> {
         title: const Text("AURA JOURNAL  - change to user name"),
       ),
       body: PageView(
-        scrollDirection: Axis.vertical,
+        scrollDirection: Axis.horizontal,
         controller: controller,
         onPageChanged: (value) {
           setState(() {
             index = value; // Update the index when page changes
           });
         },
-        children: pages, // Use the pages list for page view
+        children: pages, // Use the pages list for PageView
       ),
       bottomNavigationBar: BottomNavBar(
         curentIndex: index,
