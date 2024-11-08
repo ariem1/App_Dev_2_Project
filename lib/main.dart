@@ -15,12 +15,14 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Aura Journal',
+      color: Colors.deepPurple,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
         scaffoldBackgroundColor: customColor, // Set the body background color here
         appBarTheme: AppBarTheme(
-          backgroundColor: customColor,  // Set the AppBar background color here
+          titleTextStyle: TextStyle(color: Colors.deepPurple, fontSize: 20),
+          backgroundColor: customColor,
         ),
         useMaterial3: true,
       ),
