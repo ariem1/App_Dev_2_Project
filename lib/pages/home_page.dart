@@ -99,150 +99,267 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
+  final PageController _pageController = PageController(initialPage: 0);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: SingleChildScrollView(
-        child: Container(
-          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
-          child: Column(
-            children: [
-              Container(
-                // CALENDAR CONTAINER
-                padding: const EdgeInsets.only(bottom: 15),
-                decoration: BoxDecoration(
-                  color: Colors.white, // Background color of the container
-                  borderRadius: BorderRadius.circular(25), // Rounded corners
-                ),
-                child: TableCalendar(
-                  locale: "en_US",
-                  headerStyle: const HeaderStyle(
-                    formatButtonVisible: false,
-                    titleCentered: true,
-                    headerMargin: EdgeInsets.symmetric(vertical: 5),
-                    titleTextStyle: TextStyle(
-                      fontSize: 18,
-                      color: Colors.blue,
-                    ),
-                  ),
-                  calendarBuilders: CalendarBuilders(
-                    headerTitleBuilder: (context, date) {
-                      // dayPart and monthYearPart
-                      String dayPart = DateFormat('EEE, MMM d').format(today);
-                      String monthYearPart =
-                          DateFormat('MMM yyyy').format(date);
-
-                      //Header text
-                      return Padding(
-                        padding: const EdgeInsets.only(bottom: 1),
-                        child: Row(
-                          mainAxisAlignment: MainAxisAlignment.start,
-                          children: [
-                            // DAY PART
-                            Container(
-                              width: 160,
-                              child: Text(
-                                dayPart,
-                                style: const TextStyle(
-                                  fontSize: 22,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            // MONTH YEAR PART
-                            Container(
-                              width: 90,
+      body: Column(
+        children: [
+          Expanded(
+            flex: 2,
+            child: SingleChildScrollView(
+              child: Container(
+                margin:
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                child: Column(
+                  children: [
+                    Container(
+                      // CALENDAR CONTAINER
+                      padding: const EdgeInsets.only(bottom: 15),
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(25),
+                      ),
+                      child: TableCalendar(
+                        locale: "en_US",
+                        headerStyle: const HeaderStyle(
+                          formatButtonVisible: false,
+                          titleCentered: true,
+                          headerMargin: EdgeInsets.symmetric(vertical: 5),
+                          titleTextStyle: TextStyle(
+                            fontSize: 18,
+                            color: Colors.blue,
+                          ),
+                        ),
+                        calendarBuilders: CalendarBuilders(
+                          headerTitleBuilder: (context, date) {
+                            String dayPart =
+                                DateFormat('EEE, MMM d').format(today);
+                            String monthYearPart =
+                                DateFormat('MMM yyyy').format(date);
+                            return Padding(
+                              padding: const EdgeInsets.only(bottom: 1),
                               child: Row(
-                                mainAxisAlignment: MainAxisAlignment.end,
+                                mainAxisAlignment: MainAxisAlignment.start,
                                 children: [
-                                  Text(
-                                    monthYearPart,
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      color: Colors.grey,
+                                  Container(
+                                    width: 160,
+                                    child: Text(
+                                      dayPart,
+                                      style: const TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 90,
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        Text(
+                                          monthYearPart,
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            color: Colors.grey,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ),
                                 ],
                               ),
-                            ),
-                          ],
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                  availableGestures: AvailableGestures.all,
-                  focusedDay: today,
-                  selectedDayPredicate: (day) => isSameDay(day, today),
-                  firstDay: DateTime.utc(1970, 1, 1),
-                  lastDay: DateTime.utc(2050, 1, 1),
-                  onDaySelected: _onDaySelected,
-                  daysOfWeekHeight: 25,
-                ),
-              ),
-              //  const SizedBox(height: 20),
-              Container(
-                margin: EdgeInsets.only(top: 10),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(' DATA'),
-                    Container(
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: Colors.blue, // Set the border color
-                          width: 2.0, // Set the border width
-                        ),
-                      ),
-                      margin: EdgeInsets.only(top: 5),
-                      padding: EdgeInsets.only(top: 5),
-
-                      child: Row(
-                        children: [
-                          Container(
-                            child: Icon(
-                              Icons.water_drop_outlined,
-                              size: 70,
-                            ),
-                          ),
-                          Container(
-                            margin: EdgeInsets.only(left: 7),
-                            decoration: BoxDecoration(
-                              border: Border.all(
-                                color: Colors.blue, // Set the border color
-                                width: 2.0, // Set the border width
-                              ),),
-                            width: 250,
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text("Today's Water Intake"),
-                                SizedBox(
-                                  height: 10,
-                                ),
-                                Row(
-                                  children: droplets,
-                                )
-                              ],
-                            ),
-                          ),
-                          Column(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children:[ IconButton(
-                              icon: Icon(Icons.add), // Icon to display
-                              onPressed: () {
-                                _addDroplet();
-                                print("Water added!");
-                              },
-                            ),
-                          ],),
-                        ],
+                        availableGestures: AvailableGestures.all,
+                        focusedDay: today,
+                        selectedDayPredicate: (day) => isSameDay(day, today),
+                        firstDay: DateTime.utc(1970, 1, 1),
+                        lastDay: DateTime.utc(2050, 1, 1),
+                        onDaySelected: _onDaySelected,
+                        daysOfWeekHeight: 25,
                       ),
                     ),
                   ],
                 ),
-              )
-            ],
+              ),
+            ),
           ),
+          // Swipeable Container using PageView
+          Expanded(
+            flex: 2,
+            child: Container(
+              margin: const EdgeInsets.only(bottom: 60, left: 20, right: 20),
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                //color: Colors.pink[50],
+              ),
+              child: PageView(
+                controller: _pageController,
+                children: [
+                  easyView(),
+                  ToDoView(),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget easyView() {
+    return Container(
+      margin: EdgeInsets.only(top: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('DATA'),
+          Container(
+            margin: EdgeInsets.only(top: 5),
+            padding: EdgeInsets.only(top: 5),
+            child: Row(
+              children: [
+                Icon(Icons.water_drop_outlined, size: 70),
+                Container(
+                  margin: EdgeInsets.only(left: 3),
+                  width: 250,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text("Today's Water Intake"),
+                      SizedBox(height: 10),
+                      Row(children: droplets),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: Icon(Icons.add),
+                  onPressed: _addDroplet,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget ToDoView() {
+    return SingleChildScrollView(
+      child: Container(
+        // TO DO CONTAINER
+        height: 330,
+        //margin: EdgeInsets.only(top: 10),
+        //padding: const EdgeInsets.all(10),
+        // decoration: BoxDecoration(
+        //  // color: Colors.green,
+        //   borderRadius: BorderRadius.circular(10),
+        //   border: Border.all(color: Colors.black12),
+        // ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              alignment: Alignment.centerLeft,
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(color: Colors.black12, width: 0.5),
+                ),
+              ),
+              padding: const EdgeInsets.only(bottom: 8),
+              child: Row(
+                children: [
+                  Text(
+                    'To Do',
+                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  ),
+                  SizedBox(
+                    width: 260,
+                  ),
+                  GestureDetector(
+                    onTap: () {
+                      //CHANGE - NAVIGATE TO TO DO VIEW
+                      print("View To Do !");
+                    },
+                    child: Text(
+                      'View',
+                      style: TextStyle(fontSize: 17, color: Colors.black54),
+                    ),
+                  )
+                ],
+              ),
+            ),
+            Container(
+              // color: Colors.lightBlueAccent,
+              height: 190,
+              margin: EdgeInsets.only(bottom: 10),
+              // decoration: BoxDecoration(
+              //   //     color: Colors.lightBlueAccent,
+              //   borderRadius: BorderRadius.circular(10),
+              //   border: Border.all(color: Colors.black12),
+              // ),
+              child: SingleChildScrollView(
+                child: toDoList(),
+              ),
+            ),
+            Expanded(
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextField(
+                      controller: taskController,
+                      decoration: InputDecoration(
+                        hintText: "Enter a new task",
+                        contentPadding: EdgeInsets.symmetric(
+                            vertical: 0, horizontal: 15), // Controls height
+
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(
+                              30), // Rounded corners for enabled state
+                        ),
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    onPressed: addTask,
+                    icon: const Icon(Icons.add),
+                  ),
+                ],
+              ),
+            ),
+            Container( // PAGE INDICATORSS
+              padding: const EdgeInsets.all(8.0),
+
+              child: Row(
+                //mainAxisSize: MainAxisSize.min,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  // Filled circle
+                  Container(
+                    width: 12,
+                    height: 10,
+                    decoration: const BoxDecoration(
+                      color: Colors.grey, // Filled circle color
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Unfilled circle
+                  Container(
+                    width: 12,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: Colors.black,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -258,7 +375,7 @@ class _HomePageState extends State<HomePage> {
             decoration: const BoxDecoration(
               border: Border(
                 bottom: BorderSide(
-                  color: Colors.grey, // Border color
+                  color: Colors.black12, // Border color
                   width: 1.0, // Border width
                 ),
               ),
@@ -281,94 +398,6 @@ class _HomePageState extends State<HomePage> {
             ),
           );
         },
-      ),
-    );
-  }
-
-  Widget ToDoView() {
-    return Container(
-      // TO DO CONTAINER
-      height: 350,
-      margin: EdgeInsets.only(top: 10),
-      padding: const EdgeInsets.all(10),
-      // decoration: BoxDecoration(
-      //  // color: Colors.green,
-      //   borderRadius: BorderRadius.circular(10),
-      //   border: Border.all(color: Colors.black12),
-      // ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            alignment: Alignment.centerLeft,
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: Colors.black12, width: 0.5),
-              ),
-            ),
-            padding: const EdgeInsets.only(bottom: 8),
-            child: Row(
-              children: [
-                Text(
-                  'To Do',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-                SizedBox(
-                  width: 260,
-                ),
-                GestureDetector(
-                  onTap: () {
-                    //CHANGE - NAVIGATE TO TO DO VIEW
-                    print("View To Do !");
-                  },
-                  child: Text(
-                    'View',
-                    style: TextStyle(fontSize: 17, color: Colors.black54),
-                  ),
-                )
-              ],
-            ),
-          ),
-          const SizedBox(height: 8),
-          Container(
-            // color: Colors.lightBlueAccent,
-            height: 190,
-            margin: EdgeInsets.only(bottom: 10),
-            decoration: BoxDecoration(
-              //     color: Colors.lightBlueAccent,
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: Colors.black12),
-            ),
-            child: SingleChildScrollView(
-              child: toDoList(),
-            ),
-          ),
-          Expanded(
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: taskController,
-                    decoration: InputDecoration(
-                      hintText: "Enter a new task",
-                      contentPadding: EdgeInsets.symmetric(
-                          vertical: 0, horizontal: 15), // Controls height
-
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(
-                            30), // Rounded corners for enabled state
-                      ),
-                    ),
-                  ),
-                ),
-                IconButton(
-                  onPressed: addTask,
-                  icon: const Icon(Icons.add),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }

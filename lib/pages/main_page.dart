@@ -32,6 +32,7 @@ class _MainPageState extends State<MainPage> {
         title: const Text("AURA JOURNAL  - change to user name"),
       ),
       body: PageView(
+        scrollDirection: Axis.vertical,
         controller: controller,
         onPageChanged: (value) {
           setState(() {
