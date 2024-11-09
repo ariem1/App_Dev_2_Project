@@ -5,19 +5,19 @@ import 'package:aura_journal/pages/water_page.dart';
 import 'package:aura_journal/pages/to_do_page.dart';
 import 'package:flutter/material.dart';
 import 'nav_bar.dart';
+import 'settings_page.dart';
 
 class MainPage extends StatefulWidget {
-
   const MainPage({super.key});
 
   @override
   State<MainPage> createState() => _MainPageState();
 }
 
-
 class _MainPageState extends State<MainPage> {
   final PageController controller = PageController(); // Initialize PageController
   int index = 0; // Initialize index to track the current page
+  String _journalName = "Journal"; // Default journal name
 
   final List<Widget> pages = [
     const HomePage(),
@@ -25,14 +25,46 @@ class _MainPageState extends State<MainPage> {
     const BudgetPage(),
     const WaterPage(),
   ];
- // Control flag to show ToDoPage
+  // Control flag to show ToDoPage
+
+  // Update journal name and refresh AppBar title
+  void _updateJournalName(String newName) {
+    setState(() {
+      _journalName = newName;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
-        title: const Text("AURA JOURNAL  - change to user name"),
+        title: Text(_journalName),
+        actions: [
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert),
+            onSelected: (value) {
+              if (value == 'Settings') {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SettingsPage(journalName: _journalName, onNameUpdated: _updateJournalName,),
+                  ),
+                ).then((updatedName) {
+                  if (updatedName != null) {
+                    _updateJournalName(updatedName);
+                  }
+                });
+              }
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem<String>(
+                value: 'Settings',
+                child: Text('Settings'),
+              ),
+            ],
+          ),
+        ],
       ),
       body: PageView(
         scrollDirection: Axis.horizontal,
@@ -58,22 +90,10 @@ class _MainPageState extends State<MainPage> {
           });
         },
         children: [
-          BottomNavBarItem(
-            title: "   Home   ",
-            icon: Icons.home_filled,
-          ),
-          BottomNavBarItem(
-            title: "   Mood   ",
-            icon: Icons.mood,
-          ),
-          BottomNavBarItem(
-            title: '   Budget   ',
-            icon: Icons.attach_money,
-          ),
-          BottomNavBarItem(
-            title: "   Water   ",
-            icon: Icons.water_drop_outlined,
-          ),
+          BottomNavBarItem(title: "   Home   ", icon: Icons.home_filled),
+          BottomNavBarItem(title: "   Mood   ", icon: Icons.mood),
+          BottomNavBarItem(title: '   Budget   ', icon: Icons.attach_money),
+          BottomNavBarItem(title: "   Water   ", icon: Icons.water_drop_outlined),
         ],
       ),
     );
