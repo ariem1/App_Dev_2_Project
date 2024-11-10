@@ -1,14 +1,16 @@
-import 'home_page.dart';
+import 'package:flutter/material.dart';
+import 'package:aura_journal/pages/home_page.dart';
 import 'package:aura_journal/pages/mood_page.dart';
 import 'package:aura_journal/pages/budget_page.dart';
 import 'package:aura_journal/pages/water_page.dart';
 import 'package:aura_journal/pages/to_do_page.dart';
-import 'package:flutter/material.dart';
-import 'nav_bar.dart';
-import 'settings_page.dart';
+import 'package:aura_journal/pages/nav_bar.dart';
+import 'package:aura_journal/pages/settings_page.dart';
 
 class MainPage extends StatefulWidget {
-  const MainPage({super.key});
+  final void Function(Color) onColorUpdate;
+
+  const MainPage({super.key, required this.onColorUpdate});
 
   @override
   State<MainPage> createState() => _MainPageState();
@@ -48,7 +50,11 @@ class _MainPageState extends State<MainPage> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => SettingsPage(journalName: _journalName, onNameUpdated: _updateJournalName,),
+                    builder: (context) => SettingsPage(
+                      journalName: _journalName,
+                      onNameUpdated: _updateJournalName,
+                      onColorUpdate: widget.onColorUpdate,
+                    ),
                   ),
                 ).then((updatedName) {
                   if (updatedName != null) {

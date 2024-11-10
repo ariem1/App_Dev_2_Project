@@ -5,28 +5,40 @@ void main() {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatefulWidget {
   const MyApp({super.key});
 
-  // Define the custom color with correct alpha channel
-  final Color customColor = const Color(0xFFE3EFF9);  // Updated with full opacity (0xFF)
+  @override
+  _MyAppState createState() => _MyAppState();
+}
+
+class _MyAppState extends State<MyApp> {
+  Color _backgroundColor = const Color(0xFFE3EFF9);
+
+
+  void _updateBackgroundColor(Color color) {
+    setState(() {
+      _backgroundColor = color;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Aura Journal',
-      color: Colors.deepPurple,
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.white),
-        scaffoldBackgroundColor: customColor, // Set the body background color here
+        scaffoldBackgroundColor: _backgroundColor,
         appBarTheme: AppBarTheme(
           titleTextStyle: TextStyle(color: Colors.deepPurple, fontSize: 20),
-          backgroundColor: customColor,
+          backgroundColor: _backgroundColor,
         ),
         useMaterial3: true,
       ),
-      home: const MainPage(),
+      home: MainPage(
+        onColorUpdate: _updateBackgroundColor,
+      ),
     );
   }
 }

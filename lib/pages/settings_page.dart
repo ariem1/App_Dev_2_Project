@@ -3,8 +3,14 @@ import 'package:flutter/material.dart';
 class SettingsPage extends StatefulWidget {
   final String journalName;
   final ValueChanged<String> onNameUpdated;
+  final ValueChanged<Color> onColorUpdate;
 
-  const SettingsPage({super.key, required this.journalName, required this.onNameUpdated});
+  const SettingsPage({
+    super.key,
+    required this.journalName,
+    required this.onNameUpdated,
+    required this.onColorUpdate,
+  });
 
   @override
   State<SettingsPage> createState() => _SettingsPageState();
@@ -21,6 +27,15 @@ class _SettingsPageState extends State<SettingsPage> {
     _journalNameController = TextEditingController(text: widget.journalName);
     _selectedColor = 'Option 1';
     _selectedLanguage = 'English';
+  }
+
+  Color _getColorFromOption(String colorOption) {
+    if (colorOption == 'Option 2') {
+      return Colors.pink;
+    } else if (colorOption == 'Option 3') {
+      return Colors.purple;
+    }
+    return const Color(0xFFE3EFF9); // Default blue color
   }
 
   @override
@@ -43,25 +58,17 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     const Text(
                       'Journal Name',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _journalNameController,
-                      decoration: InputDecoration(
-                        border: OutlineInputBorder(),
-                      ),
+                      decoration: const InputDecoration(border: OutlineInputBorder()),
                     ),
                     const SizedBox(height: 20),
                     const Text(
                       'Color',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -74,10 +81,7 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 20),
                     const Text(
                       'Language',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -93,11 +97,12 @@ class _SettingsPageState extends State<SettingsPage> {
               ElevatedButton(
                 onPressed: () {
                   widget.onNameUpdated(_journalNameController.text);
+                  widget.onColorUpdate(_getColorFromOption(_selectedColor!));
                   ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Journal name updated successfully'),
-                        duration: Duration(seconds: 5),
-                      ),
+                    const SnackBar(
+                      content: Text('Aura journal settings have been updated'),
+                      duration: Duration(seconds: 5),
+                    ),
                   );
                 },
                 child: const Text('Update'),
@@ -109,7 +114,7 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // Build radio buttons
+  // Build radio buttons for options
   Widget _buildRadio(String value, String label, String? groupValue) {
     return Row(
       children: [
@@ -118,11 +123,7 @@ class _SettingsPageState extends State<SettingsPage> {
           groupValue: groupValue,
           onChanged: (value) {
             setState(() {
-              if (groupValue == _selectedColor) {
-                _selectedColor = value;
-              } else {
-                _selectedLanguage = value;
-              }
+              _selectedColor = value;
             });
           },
         ),
