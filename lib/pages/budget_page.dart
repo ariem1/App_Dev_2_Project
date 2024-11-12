@@ -29,6 +29,7 @@ class _BudgetPageState extends State<BudgetPage> {
   void _setBudget() {
     setState(() {
       _budgetAmount = double.tryParse(_budgetTextController.text);
+      _budgetTextController.clear();
     });
   }
 

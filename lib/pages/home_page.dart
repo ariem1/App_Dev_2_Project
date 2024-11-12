@@ -144,6 +144,7 @@ class _HomePageState extends State<HomePage> {
       setState(() {
         amount = 0.0;
         description = '';
+        budgetController.clear();
       });
     }
   }
@@ -358,7 +359,7 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(height: 10),
                           Row(children: [
                             Text("Balance: \$"),
-                            Expanded(child: TextField(onChanged: (value)=> amount = double.tryParse(value) ?? 0.0,keyboardType: TextInputType.number,))
+                            Expanded(child: TextField(controller: budgetController,onChanged: (value)=> amount = double.tryParse(value) ?? 0.0,keyboardType: TextInputType.number,))
                           ]),
                         ],
                       ),
