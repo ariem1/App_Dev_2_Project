@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "223818592172",
+    "project_id": "aura-journal",
+    "storage_bucket": "aura-journal.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:223818592172:android:3a874b01cf4936bf7f1409",
+        "android_client_info": {
+          "package_name": "com.example.aura_journal"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA20UbObasSkmABafhL4uGLeBRmWiBb5cM"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

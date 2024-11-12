@@ -33,6 +33,9 @@ dependencies:
 
   table_calendar: ^3.1.2 #calendar api
   intl: any
+  firebase_core: any
+  cloud_firestore: any
+  firebase_core_platform_interface: any
 
 
 

@@ -102,7 +102,6 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-
   int _selectedMood = 4; //happy as defualt
 
   Icon _buildIcon(int index) {
@@ -129,10 +128,15 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-
   bool showToDoPage = false;
 
   final PageController _pageController = PageController(initialPage: 0);
+
+  TextEditingController budgetController = TextEditingController();
+
+  void checkBudget(double budget){
+    //check if the input is numbers
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -244,149 +248,153 @@ class _HomePageState extends State<HomePage> {
   }
 
   Widget easyView() {
-    return Container(
-      margin: EdgeInsets.only(top: 10),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: EdgeInsets.only(top: 5),
-            padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
-            decoration: BoxDecoration(
-                border: Border(
-              bottom: BorderSide(color: Colors.black12, width: 1),
-            )),
-            child: Row(
-              children: [
-                Icon(Icons.water_drop_outlined, size: 70),
-                Container(
-                  //  padding: EdgeInsets.only(bottom: 10),
-                  margin: EdgeInsets.only(left: 10),
-                  width: 230,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+    return SingleChildScrollView(
+      child: Column(children: [
+        Container(
+          // margin: EdgeInsets.only(top: 5),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                margin: EdgeInsets.only(top: 5),
+                padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+                decoration: BoxDecoration(
+                    border: Border(
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                )),
+                child: Expanded(
+                  child: Row(
                     children: [
-                      Text("Today's Water Intake"),
-                      SizedBox(height: 10),
-                      Row(children: droplets),
-                    ],
-                  ),
-                ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _addDroplet,
-                ),
-              ],
-            ),
-          ),
-          Container(
-            margin: EdgeInsets.only(top: 10),
-            padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
-            decoration: BoxDecoration(
-                border: Border(
-              bottom: BorderSide(color: Colors.black12, width: 1),
-            )),
-            child: Row(
-              children: [
-                _moodToDisplay(_selectedMood),
-                Container(
-                  //  padding: EdgeInsets.only(bottom: 10),
-                  margin: EdgeInsets.only(left: 10),
-                  width: 250,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Today's Mood"),
-                      SizedBox(height: 10),
-                      Row(
-                        children: List.generate(5, (index) {
-                          return IconButton(
-                            icon: _buildIcon(index),
-                            onPressed: () {
-                              setState(() {
-                                _selectedMood = index;
-                              });
-                            },
-                            color: _selectedMood == index
-                                ? Colors.deepPurple
-                                : null,
-                          );
-                        }),
+                      Icon(Icons.water_drop_outlined, size: 70),
+                      Container(
+                        //  padding: EdgeInsets.only(bottom: 10),
+                        margin: EdgeInsets.only(left: 10),
+                        width: 230,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Today's Water Intake"),
+                            SizedBox(height: 10),
+                            Row(children: droplets),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: _addDroplet,
                       ),
                     ],
                   ),
                 ),
-              ],
-            ),
-          ),
-          Container(
-            margin: EdgeInsets.only(top: 5),
-            padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
-            decoration: BoxDecoration(
-                border: Border(
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 10),
+                padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+                decoration: BoxDecoration(
+                    border: Border(
                   bottom: BorderSide(color: Colors.black12, width: 1),
                 )),
-            child: Row(
-              children: [
-                Icon(Icons.water_drop_outlined, size: 70),
-                Container(
-                  //  padding: EdgeInsets.only(bottom: 10),
-                  margin: EdgeInsets.only(left: 10),
-                  width: 230,
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text("Budget"),
-                      SizedBox(height: 10),
-                      Row(children: [
-                        Text("Balance: \$"),
-                       // TextField(),
+                child: Row(
+                  children: [
+                    _moodToDisplay(_selectedMood),
+                    Container(
+                      //  padding: EdgeInsets.only(bottom: 10),
+                      margin: EdgeInsets.only(left: 10),
+                      width: 250,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Today's Mood"),
+                          SizedBox(height: 10),
+                          Row(
+                            children: List.generate(5, (index) {
+                              return IconButton(
+                                icon: _buildIcon(index),
+                                onPressed: () {
+                                  setState(() {
+                                    _selectedMood = index;
+                                  });
+                                },
+                                color: _selectedMood == index
+                                    ? Colors.deepPurple
+                                    : null,
+                              );
+                            }),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                margin: EdgeInsets.only(top: 5),
+                padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+                decoration: BoxDecoration(
+                    border: Border(
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                )),
+                child: Row(
+                  children: [
+                    Icon(Icons.water_drop_outlined, size: 70),
+                    Container(
+                      //  padding: EdgeInsets.only(bottom: 10),
+                      margin: EdgeInsets.only(left: 10),
+                      width: 230,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Budget"),
+                          SizedBox(height: 10),
+                          Row(children: [
+                            Text("Balance: \$"),
+                            Expanded(child: TextField(controller: budgetController,keyboardType: TextInputType.number,))
+                          ]),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.add),
+                      onPressed: _addDroplet,
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                // PAGE INDICATORSS
+                padding: const EdgeInsets.all(8.0),
+                margin: EdgeInsets.only(top: 5),
 
-                      ]),
-                    ],
-                  ),
+                child: Row(
+                  //mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Filled circle
+                    Container(
+                      width: 12,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.black, // Filled circle color
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Unfilled circle
+                    Container(
+                      width: 12,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.grey,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
                 ),
-                IconButton(
-                  icon: Icon(Icons.add),
-                  onPressed: _addDroplet,
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-          Container(
-            // PAGE INDICATORSS
-            padding: const EdgeInsets.all(8.0),
-
-            child: Row(
-              //mainAxisSize: MainAxisSize.min,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                // Filled circle
-                Container(
-                  width: 12,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    color: Colors.black, // Filled circle color
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // Unfilled circle
-                Container(
-                  width: 12,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: Colors.grey,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-
-        ],
-      ),
+        ),
+      ]),
     );
   }
 

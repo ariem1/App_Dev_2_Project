@@ -1,8 +1,33 @@
 import 'package:flutter/material.dart';
 import 'package:aura_journal/pages/main_page.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
-void main() {
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await Firebase.initializeApp(
+    options: FirebaseOptions(
+        apiKey: "AIzaSyA20UbObasSkmABafhL4uGLeBRmWiBb5cM",
+        appId: "223818592172",
+        messagingSenderId: "1:223818592172:android:3a874b01cf4936bf7f1409",
+        projectId: "aura-journal")
+  );
+  print('DB COnnected');
+  CollectionReference users = FirebaseFirestore.instance.collection('Users');
+  String name = 'emma';
+  String password = 'solo';
+
+ // Future<void> addUsers() async {
+    if (name.isNotEmpty && password.isNotEmpty) {
+      await users.add({'name': name, 'password': password});
+
+      print('user added');
+   // }
+  }
+
   runApp(const MyApp());
+
 }
 
 class MyApp extends StatefulWidget {
@@ -13,6 +38,19 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
+  CollectionReference users = FirebaseFirestore.instance.collection('Users');
+  String name = 'emma';
+  String password = 'solo';
+
+  Future<void> addUsers() async{
+    if(name.isNotEmpty && password.isNotEmpty){
+      await users.add({'name':name, 'password': password});
+
+      print('user added');
+
+    }
+}
+
   Color _backgroundColor = const Color(0xFFE3EFF9);
 
 
