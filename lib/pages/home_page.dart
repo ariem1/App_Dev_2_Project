@@ -1,11 +1,11 @@
 import 'package:aura_journal/pages/journal_page.dart';
 import 'package:aura_journal/pages/main_page.dart';
 import 'package:aura_journal/pages/to_do_page.dart';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -132,10 +132,20 @@ class _HomePageState extends State<HomePage> {
 
   final PageController _pageController = PageController(initialPage: 0);
 
+  /*BUDGET STUFF*/
   TextEditingController budgetController = TextEditingController();
+  CollectionReference spendings = FirebaseFirestore.instance.collection('Spendings');
+  double amount = 0.0;
+  String description = '';
 
-  void checkBudget(double budget){
-    //check if the input is numbers
+  Future<void> addSpending() async{
+    if(amount > 0){
+      await spendings.add({'amount': amount, 'description':description});
+      setState(() {
+        amount = 0.0;
+        description = '';
+      });
+    }
   }
 
   @override
@@ -148,7 +158,7 @@ class _HomePageState extends State<HomePage> {
             child: SingleChildScrollView(
               child: Container(
                 margin:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                 child: Column(
                   children: [
                     Container(
@@ -172,9 +182,9 @@ class _HomePageState extends State<HomePage> {
                         calendarBuilders: CalendarBuilders(
                           headerTitleBuilder: (context, date) {
                             String dayPart =
-                                DateFormat('EEE, MMM d').format(today);
+                            DateFormat('EEE, MMM d').format(today);
                             String monthYearPart =
-                                DateFormat('MMM yyyy').format(date);
+                            DateFormat('MMM yyyy').format(date);
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 1),
                               child: Row(
@@ -260,8 +270,8 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
                 decoration: BoxDecoration(
                     border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                )),
+                      bottom: BorderSide(color: Colors.black12, width: 1),
+                    )),
                 child: Expanded(
                   child: Row(
                     children: [
@@ -292,8 +302,8 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
                 decoration: BoxDecoration(
                     border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                )),
+                      bottom: BorderSide(color: Colors.black12, width: 1),
+                    )),
                 child: Row(
                   children: [
                     _moodToDisplay(_selectedMood),
@@ -332,11 +342,11 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
                 decoration: BoxDecoration(
                     border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                )),
+                      bottom: BorderSide(color: Colors.black12, width: 1),
+                    )),
                 child: Row(
                   children: [
-                    Icon(Icons.water_drop_outlined, size: 70),
+                    Icon(Icons.attach_money, size: 70),
                     Container(
                       //  padding: EdgeInsets.only(bottom: 10),
                       margin: EdgeInsets.only(left: 10),
@@ -348,14 +358,14 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(height: 10),
                           Row(children: [
                             Text("Balance: \$"),
-                            Expanded(child: TextField(controller: budgetController,keyboardType: TextInputType.number,))
+                            Expanded(child: TextField(onChanged: (value)=> amount = double.tryParse(value) ?? 0.0,keyboardType: TextInputType.number,))
                           ]),
                         ],
                       ),
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed: _addDroplet,
+                      onPressed:addSpending,
                     ),
                   ],
                 ),
@@ -526,7 +536,7 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: List.generate(
         tasks.length,
-        (index) {
+            (index) {
           return Container(
             decoration: const BoxDecoration(
               border: Border(

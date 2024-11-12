@@ -6,6 +6,7 @@ import 'package:aura_journal/pages/water_page.dart';
 import 'package:aura_journal/pages/to_do_page.dart';
 import 'package:aura_journal/pages/nav_bar.dart';
 import 'package:aura_journal/pages/settings_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class MainPage extends StatefulWidget {
   final void Function(Color) onColorUpdate;

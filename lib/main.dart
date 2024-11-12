@@ -13,7 +13,7 @@ Future<void> main() async {
         messagingSenderId: "1:223818592172:android:3a874b01cf4936bf7f1409",
         projectId: "aura-journal")
   );
-  print('DB COnnected');
+  print('DB Connected');
   CollectionReference users = FirebaseFirestore.instance.collection('Users');
   String name = 'emma';
   String password = 'solo';
