@@ -36,6 +36,7 @@ dependencies:
   firebase_core: any
   cloud_firestore: any
   firebase_core_platform_interface: any
+  firebase_auth: any
 
 
 

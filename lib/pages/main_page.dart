@@ -3,10 +3,9 @@ import 'package:aura_journal/pages/home_page.dart';
 import 'package:aura_journal/pages/mood_page.dart';
 import 'package:aura_journal/pages/budget_page.dart';
 import 'package:aura_journal/pages/water_page.dart';
-import 'package:aura_journal/pages/to_do_page.dart';
 import 'package:aura_journal/pages/nav_bar.dart';
 import 'package:aura_journal/pages/settings_page.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:aura_journal/firestore_service.dart';
 
 class MainPage extends StatefulWidget {
   final void Function(Color) onColorUpdate;
@@ -18,7 +17,8 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final PageController controller = PageController(); // Initialize PageController
+  final PageController controller =
+      PageController(); // Initialize PageController
   int index = 0; // Initialize index to track the current page
   String _journalName = "Journal"; // Default journal name
 
@@ -100,7 +100,8 @@ class _MainPageState extends State<MainPage> {
           BottomNavBarItem(title: "   Home   ", icon: Icons.home_filled),
           BottomNavBarItem(title: "   Mood   ", icon: Icons.mood),
           BottomNavBarItem(title: '   Budget   ', icon: Icons.attach_money),
-          BottomNavBarItem(title: "   Water   ", icon: Icons.water_drop_outlined),
+          BottomNavBarItem(
+              title: "   Water   ", icon: Icons.water_drop_outlined),
         ],
       ),
     );

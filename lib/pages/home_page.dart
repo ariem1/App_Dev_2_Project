@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:aura_journal/firestore_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -15,6 +16,12 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
+  //db connection
+  final FirestoreService _firestoreService = FirestoreService();
+  String? _userId;
+
+
   //todays date
   DateTime today = DateTime.now();
 

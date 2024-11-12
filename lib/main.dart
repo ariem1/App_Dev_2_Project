@@ -1,30 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:aura_journal/pages/main_page.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'firestore_service.dart';
 
 
 Future<void> main() async {
+
+  //initialize firebase
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: FirebaseOptions(
-        apiKey: "AIzaSyA20UbObasSkmABafhL4uGLeBRmWiBb5cM",
-        appId: "223818592172",
-        messagingSenderId: "1:223818592172:android:3a874b01cf4936bf7f1409",
-        projectId: "aura-journal")
-  );
-  print('DB Connected');
-  CollectionReference users = FirebaseFirestore.instance.collection('Users');
-  String name = 'emma';
-  String password = 'solo';
+  await Firebase.initializeApp();
 
- // Future<void> addUsers() async {
-    if (name.isNotEmpty && password.isNotEmpty) {
-      await users.add({'name': name, 'password': password});
+  print('Main: Firebase Initialized');
 
-      print('user added');
-   // }
-  }
+  //Initialize FireStore and sign in anonymously
+  final FirestoreService firestoreService = FirestoreService();
+  await firestoreService.signInAnonymouslyAndCreateUser();
+
+  print('Current User: ${firestoreService.getCurrentUser()?.isAnonymous}');
+
 
   runApp(const MyApp());
 
@@ -38,18 +32,18 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-  CollectionReference users = FirebaseFirestore.instance.collection('Users');
-  String name = 'emma';
-  String password = 'solo';
-
-  Future<void> addUsers() async{
-    if(name.isNotEmpty && password.isNotEmpty){
-      await users.add({'name':name, 'password': password});
-
-      print('user added');
-
-    }
-}
+//   CollectionReference users = FirebaseFirestore.instance.collection('Users');
+//   String name = 'emma';
+//   String password = 'solo';
+//
+//   Future<void> addUsers() async{
+//     if(name.isNotEmpty && password.isNotEmpty){
+//       await users.add({'name':name, 'password': password});
+//
+//       print('user added');
+//
+//     }
+// }
 
   Color _backgroundColor = const Color(0xFFE3EFF9);
 
