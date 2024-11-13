@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:aura_journal/firestore_service.dart';
 
 class SettingsPage extends StatefulWidget {
   final String journalName;
@@ -17,6 +18,9 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
+
+  final FirestoreService fsService = FirestoreService();
+
   late TextEditingController _journalNameController;
   String? _selectedColor;
   String? _selectedLanguage;
@@ -36,6 +40,23 @@ class _SettingsPageState extends State<SettingsPage> {
       return Colors.purple;
     }
     return const Color(0xFFE3EFF9); // Default blue color
+  }
+
+  Future<void> fetchJournalName() async {
+    //User? user = fsService.getCurrentUser();
+
+    String? userId = fsService.getCurrentUserId();
+
+    if (userId != null) {
+      final docSnapshot = await fsService.getDocument(
+        collection: 'Users',
+        documentId: userId,
+      );
+      setState(() {
+        widget.onNameUpdated(docSnapshot.data()?['journalName']);
+        print('Settings: Journal Name updated in the app');
+      });
+    }
   }
 
   @override
@@ -95,8 +116,21 @@ class _SettingsPageState extends State<SettingsPage> {
               ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: () {
-                  widget.onNameUpdated(_journalNameController.text);
+                onPressed: () async{
+
+                  String? userId = fsService.getCurrentUserId();
+
+                  // add the journal name to the db
+                  if( userId != null && _journalNameController.text.isNotEmpty) {
+                    await fsService.updateJournalName(_journalNameController.text);
+                    print('Settings: Journal name updates to ${_journalNameController.text}');
+
+                    fetchJournalName();
+
+                  } else{
+                    print('Please enter a journal name.');
+                  }
+
                   widget.onColorUpdate(_getColorFromOption(_selectedColor!));
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(

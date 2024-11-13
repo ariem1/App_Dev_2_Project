@@ -5,7 +5,6 @@ import 'package:aura_journal/pages/budget_page.dart';
 import 'package:aura_journal/pages/water_page.dart';
 import 'package:aura_journal/pages/nav_bar.dart';
 import 'package:aura_journal/pages/settings_page.dart';
-import 'package:aura_journal/firestore_service.dart';
 
 class MainPage extends StatefulWidget {
   final void Function(Color) onColorUpdate;
@@ -18,9 +17,9 @@ class MainPage extends StatefulWidget {
 
 class _MainPageState extends State<MainPage> {
   final PageController controller =
-      PageController(); // Initialize PageController
-  int index = 0; // Initialize index to track the current page
-  String _journalName = "Journal"; // Default journal name
+      PageController();
+  int index = 0;
+  String _journalName = "Journal";
 
   final List<Widget> pages = [
     const HomePage(),

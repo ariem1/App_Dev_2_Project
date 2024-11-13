@@ -58,13 +58,34 @@ class FirestoreService {
     return _auth.currentUser;
   }
 
-  Future<void> updateJournalName(String journalName) async {
+  ///// Get user id/////
+  String? getCurrentUserId() {
+
+      return _auth.currentUser?.uid;
+
+  }
+
+  //// Update journal name
+  Future<void> updateJournalName(String newJournalName) async {
     try{
+      String? currentUserId = getCurrentUserId();
       
       //update the user's journal name
-      await _db.collection('Users').doc(_user?.uid).update(data)
+      await _db.collection('Users').doc(currentUserId).update({
+        'journalName' : newJournalName,
+      });
+
+      //print JournalName
+      print('Journal name for ${_user?.uid} updated successfully to');
+      DocumentSnapshot user_journalName = await _db.collection('Users').doc(_user?.uid).get();
+      print(user_journalName);
+    } catch (e){
+      print('Journal name failed to update: $e');
     }
   }
+
+ //////////// Add budget to collection
+
 
   /// Add or update a document in a collection
   Future<void> setData({

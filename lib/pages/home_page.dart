@@ -18,9 +18,7 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
 
   //db connection
-  final FirestoreService _firestoreService = FirestoreService();
-  String? _userId;
-
+  final FirestoreService _fsService = FirestoreService();
 
   //todays date
   DateTime today = DateTime.now();
@@ -146,8 +144,16 @@ class _HomePageState extends State<HomePage> {
   String description = '';
 
   Future<void> addSpending() async{
+    String? userId = _fsService.getCurrentUser()?.uid;
+
     if(amount > 0){
-      await spendings.add({'amount': amount, 'description':description});
+      await spendings.add({
+        'userId': userId,
+        'amount': amount,
+        'description':description,
+        'createdAt': Timestamp.now(),
+      });
+
       setState(() {
         amount = 0.0;
         description = '';

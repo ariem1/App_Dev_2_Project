@@ -1,6 +1,8 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:aura_journal/firestore_service.dart';
 
 class BudgetPage extends StatefulWidget {
   const BudgetPage({super.key});
@@ -10,6 +12,10 @@ class BudgetPage extends StatefulWidget {
 }
 
 class _BudgetPageState extends State<BudgetPage> {
+  //db connection
+  final FirestoreService _fsService = FirestoreService();
+  late User? currentUser = _fsService.getCurrentUser();
+
   late TextEditingController _budgetTextController;
   double? _budgetAmount;
   late double totalSpent;
@@ -148,7 +154,11 @@ class _BudgetPageState extends State<BudgetPage> {
             // Display spendings from Firestore
             Expanded(
               child: StreamBuilder<QuerySnapshot>(
-                stream: spendings.snapshots(),
+
+                stream: FirebaseFirestore.instance
+                    .collection('Spendings')
+                    .where('userId', isEqualTo: currentUser?.uid) // Filter by userId
+                    .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return Text('Loading...');
 
