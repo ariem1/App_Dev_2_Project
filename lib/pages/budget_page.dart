@@ -40,7 +40,7 @@ class _BudgetPageState extends State<BudgetPage> {
   }
 
   // Collection reference for spendings
-  CollectionReference spendings = FirebaseFirestore.instance.collection('Spendings');
+  CollectionReference spendings = FirebaseFirestore.instance.collection('spendings');
 
   // Delete spending entry
   Future<void> deleteSpending(String id) async {
@@ -62,7 +62,7 @@ class _BudgetPageState extends State<BudgetPage> {
 
   // Update budget by all spendings
   Future<void> updateBudget() async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('Spendings').get();
+    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('spendings').get();
 
     // loop through each entry and get sum of the amount spent
     for (var doc in snapshot.docs) {
@@ -156,7 +156,7 @@ class _BudgetPageState extends State<BudgetPage> {
               child: StreamBuilder<QuerySnapshot>(
 
                 stream: FirebaseFirestore.instance
-                    .collection('Spendings')
+                    .collection('spendings')
                     .where('userId', isEqualTo: currentUser?.uid) // Filter by userId
                     .snapshots(),
                 builder: (context, snapshot) {

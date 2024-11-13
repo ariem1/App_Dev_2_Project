@@ -16,7 +16,6 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-
   //db connection
   final FirestoreService _fsService = FirestoreService();
 
@@ -55,6 +54,9 @@ class _HomePageState extends State<HomePage> {
       default:
         selectedDay = "Unknown";
     }
+
+    //Create journal if not exist
+
 
     // Navigate to the new page with the selected date
     Navigator.push(
@@ -137,20 +139,31 @@ class _HomePageState extends State<HomePage> {
 
   final PageController _pageController = PageController(initialPage: 0);
 
+  /* FIREBASE STUFF */
+// Check if journal entry exists for today
+  Future<bool> checkJournalEntry() async {
+    bool journalExists = await _fsService.journalEntryExistsForToday();
+    print('Journal exists: $journalExists');
+
+    return journalExists;
+  }
+
   /*BUDGET STUFF*/
+
   TextEditingController budgetController = TextEditingController();
-  CollectionReference spendings = FirebaseFirestore.instance.collection('Spendings');
+  CollectionReference spendings =
+      FirebaseFirestore.instance.collection('spendings');
   double amount = 0.0;
   String description = '';
 
-  Future<void> addSpending() async{
+  Future<void> addSpending() async {
     String? userId = _fsService.getCurrentUser()?.uid;
 
-    if(amount > 0){
+    if (amount > 0) {
       await spendings.add({
         'userId': userId,
         'amount': amount,
-        'description':description,
+        'description': description,
         'createdAt': Timestamp.now(),
       });
 
@@ -172,7 +185,7 @@ class _HomePageState extends State<HomePage> {
             child: SingleChildScrollView(
               child: Container(
                 margin:
-                const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                 child: Column(
                   children: [
                     Container(
@@ -196,9 +209,9 @@ class _HomePageState extends State<HomePage> {
                         calendarBuilders: CalendarBuilders(
                           headerTitleBuilder: (context, date) {
                             String dayPart =
-                            DateFormat('EEE, MMM d').format(today);
+                                DateFormat('EEE, MMM d').format(today);
                             String monthYearPart =
-                            DateFormat('MMM yyyy').format(date);
+                                DateFormat('MMM yyyy').format(date);
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 1),
                               child: Row(
@@ -284,8 +297,8 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
                 decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.black12, width: 1),
-                    )),
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                )),
                 child: Expanded(
                   child: Row(
                     children: [
@@ -316,8 +329,8 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
                 decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.black12, width: 1),
-                    )),
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                )),
                 child: Row(
                   children: [
                     _moodToDisplay(_selectedMood),
@@ -334,7 +347,26 @@ class _HomePageState extends State<HomePage> {
                             children: List.generate(5, (index) {
                               return IconButton(
                                 icon: _buildIcon(index),
-                                onPressed: () {
+                                onPressed: () async {  // add mood to journal entry of the day
+
+
+                                  //If journal doesnt exist, make an entry
+                                  bool journalExists = await checkJournalEntry();  // Await the check
+
+
+                                  if (!journalExists) {
+                                    await _fsService.addJournalEntry(_selectedMood, '', 0);
+                                    print('Journal entry created and mood added');
+                                  } else {
+                                    //If journal exists, update the mood
+                                    String? journalId = await _fsService
+                                        .getJournalIdByUserIdAndDate();
+
+                                    //update mood
+                                    _fsService.updateJournalMood(
+                                        journalId!, _selectedMood);
+                                  }
+
                                   setState(() {
                                     _selectedMood = index;
                                   });
@@ -356,8 +388,8 @@ class _HomePageState extends State<HomePage> {
                 padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
                 decoration: BoxDecoration(
                     border: Border(
-                      bottom: BorderSide(color: Colors.black12, width: 1),
-                    )),
+                  bottom: BorderSide(color: Colors.black12, width: 1),
+                )),
                 child: Row(
                   children: [
                     Icon(Icons.attach_money, size: 70),
@@ -372,14 +404,20 @@ class _HomePageState extends State<HomePage> {
                           SizedBox(height: 10),
                           Row(children: [
                             Text("Balance: \$"),
-                            Expanded(child: TextField(controller: budgetController,onChanged: (value)=> amount = double.tryParse(value) ?? 0.0,keyboardType: TextInputType.number,))
+                            Expanded(
+                                child: TextField(
+                              controller: budgetController,
+                              onChanged: (value) =>
+                                  amount = double.tryParse(value) ?? 0.0,
+                              keyboardType: TextInputType.number,
+                            ))
                           ]),
                         ],
                       ),
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed:addSpending,
+                      onPressed: addSpending,
                     ),
                   ],
                 ),
@@ -550,7 +588,7 @@ class _HomePageState extends State<HomePage> {
     return Column(
       children: List.generate(
         tasks.length,
-            (index) {
+        (index) {
           return Container(
             decoration: const BoxDecoration(
               border: Border(
