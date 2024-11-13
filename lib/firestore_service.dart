@@ -112,7 +112,7 @@ class FirestoreService {
   }
 
   // Method to add a journal entry
-  Future<void> addJournalEntry(int mood, String content, double expense) async {
+  Future<void> addJournalEntry(int mood, String content, double expense,double budget) async {
     try {
       String? userId = getCurrentUserId();
 
@@ -123,6 +123,7 @@ class FirestoreService {
         'mood': mood,
         'content': content,
         'expense': expense,
+        'budget': budget,
 
       });
       print('Journal entry added successfully');
@@ -198,7 +199,8 @@ class FirestoreService {
     }
   }
 
-  //////////// Add budget to collection
+  // Add budget to collection
+
 
 
   /// Add or update a document in a collection

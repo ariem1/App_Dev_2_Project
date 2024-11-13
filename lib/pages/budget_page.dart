@@ -37,6 +37,7 @@ class _BudgetPageState extends State<BudgetPage> {
       _budgetAmount = double.tryParse(_budgetTextController.text);
       _budgetTextController.clear();
     });
+
   }
 
   // Collection reference for spendings
@@ -60,23 +61,6 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
-  // Update budget by all spendings
-  Future<void> updateBudget() async {
-    QuerySnapshot snapshot = await FirebaseFirestore.instance.collection('spendings').get();
-
-    // loop through each entry and get sum of the amount spent
-    for (var doc in snapshot.docs) {
-      double amount = doc['amount'] ?? 0.0;
-      totalSpent += amount;
-    }
-
-    // update budget
-    if (_budgetAmount != null) {
-      setState(() {
-        _budgetAmount = _budgetAmount! - totalSpent;
-      });
-    }
-  }
 
   // Show dialog to edit description for that entry
   void _showEditDialog(String id, String currentDescription) {

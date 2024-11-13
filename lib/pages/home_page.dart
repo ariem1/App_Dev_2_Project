@@ -355,7 +355,7 @@ class _HomePageState extends State<HomePage> {
 
 
                                   if (!journalExists) {
-                                    await _fsService.addJournalEntry(_selectedMood, '', 0);
+                                    await _fsService.addJournalEntry(_selectedMood, '', 0,0);
                                     print('Journal entry created and mood added');
                                   } else {
                                     //If journal exists, update the mood
