@@ -62,45 +62,48 @@ class FirestoreService {
 
   ///// Get user id -- dont really need this/////
   String? getCurrentUserId() {
-      return _auth.currentUser?.uid;
+    return _auth.currentUser?.uid;
   }
 
   //// Update journal name
   Future<void> updateJournalName(String newJournalName) async {
-    try{
+    try {
       String? currentUserId = getCurrentUserId();
       print('Journal name for ${currentUserId} is being updated');
 
       //update the user's journal name
       await _db.collection('users').doc(currentUserId).update({
-        'journalName' : newJournalName,
+        'journalName': newJournalName,
       });
 
       //print JournalName
       print('Journal name for ${currentUserId} updated successfully to');
-      DocumentSnapshot user_journalName = await _db.collection('users').doc(currentUserId).get();
+      DocumentSnapshot user_journalName =
+          await _db.collection('users').doc(currentUserId).get();
       print(user_journalName);
-    } catch (e){
+    } catch (e) {
       print('Journal name failed to update: $e $newJournalName');
     }
   }
 
-
   // Method to check if a journal entry exists for today
   Future<bool> journalEntryExistsForToday() async {
     try {
-   //   String? userId = getCurrentUserId();
+      //   String? userId = getCurrentUserId();
 
       // Get the current date
       DateTime now = DateTime.now();
-      DateTime startOfDay = DateTime(now.year, now.month, now.day); // Midnight of today
-      DateTime endOfDay = DateTime(now.year, now.month, now.day, 23, 59, 59, 999); // End of today
+      DateTime startOfDay =
+          DateTime(now.year, now.month, now.day); // Midnight of today
+      DateTime endOfDay = DateTime(
+          now.year, now.month, now.day, 23, 59, 59, 999); // End of today
 
       // Query Firestore to check if an entry exists for today
       QuerySnapshot snapshot = await _db
           .collection('journals')
           .where('userId', isEqualTo: _userId)
-          .where('entryDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('entryDate',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('entryDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .get();
 
@@ -113,21 +116,35 @@ class FirestoreService {
   }
 
   // Method to add a journal entry
-  Future<void> addJournalEntry(int mood, String content, double expense,double budget) async {
+  Future<void> addJournalEntry(
+    int mood,
+    String content,
+  ) async {
     try {
       String? userId = getCurrentUserId();
 
       // Add a new journal entry
-      await _db.collection('journals').add({
+      DocumentReference journal = await _db.collection('journals').add({
         'userId': userId,
-        'entryDate': Timestamp.fromDate(DateTime.now()), // Store the current date
+        'entryDate':
+            Timestamp.fromDate(DateTime.now()), // Store the current date
         'mood': mood,
         'content': content,
-        'expense': expense,
-        'budget': budget,
-
+        'budget': null, //null for now
       });
       print('Journal entry added successfully');
+
+      //get id of journal just made
+      String journalId = journal.id;
+
+      //create budget entry
+      String budgetId = await createBudgetEntry(journalId);
+
+      //update the journal entry's budget field to be the one we created
+      await _db
+          .collection('journals')
+          .doc(journalId)
+          .update({'budget': budgetId});
     } catch (e) {
       print('Error adding journal entry: $e');
     }
@@ -170,18 +187,20 @@ class FirestoreService {
   // Returns the Journal Id for the day
   Future<String?> getJournalIdByUserIdAndDate() async {
     try {
-
       // Get the start and end of the day (midnight to 11:59 PM) for the query
       DateTime now = DateTime.now();
-      DateTime startOfDay = DateTime(now.year, now.month, now.day); // Midnight of today
-      DateTime endOfDay = startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
+      DateTime startOfDay =
+          DateTime(now.year, now.month, now.day); // Midnight of today
+      DateTime endOfDay =
+          startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
 
       // Convert to Firestore's Timestamp
       Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
       Timestamp endTimestamp = Timestamp.fromDate(endOfDay);
 
       // Query the Firestore collection
-      QuerySnapshot snapshot = await _db.collection('journals')
+      QuerySnapshot snapshot = await _db
+          .collection('journals')
           .where('userId', isEqualTo: _userId)
           .where('entryDate', isGreaterThanOrEqualTo: startTimestamp)
           .where('entryDate', isLessThanOrEqualTo: endTimestamp)
@@ -204,7 +223,8 @@ class FirestoreService {
   Future<int?> getJournalMood(String journalId) async {
     try {
       // Fetch the journal entry by its ID
-      DocumentSnapshot journalDoc = await _db.collection('journals').doc(journalId).get();
+      DocumentSnapshot journalDoc =
+          await _db.collection('journals').doc(journalId).get();
 
       // Check if the journal entry exists
       if (journalDoc.exists) {
@@ -220,9 +240,87 @@ class FirestoreService {
     }
   }
 
+  //Create budget entry
+  Future<String> createBudgetEntry(String journalId) async {
+    try {
+      String? userId = getCurrentUserId();
 
-  // Add budget to collection
+      //check if budget was already created today
+      QuerySnapshot snapshot = await _db
+          .collection('budgets')
+          .where('journalId', isEqualTo: journalId)
+          .get();
 
+      if (snapshot.docs.isNotEmpty) {
+        print("Budget entry for today already exists.");
+        return snapshot.docs.first.id;
+      }
+
+      //create new one if no budget was created today
+      DocumentReference budget = await _db
+          .collection('budgets')
+          .add({'amount': 0, 'journalId': journalId});
+
+      return budget.id;
+    } catch (e) {
+      print("Error creating budget: $e");
+      throw e;
+    }
+  }
+
+  //set or update budget amount
+  Future<void> setBudgetAmount(String journalId, double amount) async {
+    try {
+      QuerySnapshot snapshot = await _db
+          .collection('budgets')
+          .where('journalId', isEqualTo: journalId)
+          .get();
+
+      if (snapshot.docs.isNotEmpty) {
+        String budgetId = snapshot.docs.first.id;
+        double currentAmount = snapshot.docs.first['amount'];
+
+        // If the current amount is different from the new amount, update it
+        if (currentAmount != amount) {
+          await _db.collection('budgets').doc(budgetId).update({
+            'amount': amount,
+          });
+          print(
+              "Budget amount updated successfully for journal ID: $journalId");
+        } else {
+          print("No update needed. The budget amount is already the same.");
+        }
+      } else {
+        // If no exist create a new one
+        DocumentReference budget = await _db.collection('budgets').add({
+          'amount': amount,
+          'journalId': journalId,
+        });
+        print(
+            "New budget entry created with amount: $amount for journal ID: $journalId");
+      }
+    } catch (e) {
+      print("Error setting budget amount: $e");
+    }
+  }
+
+  // Method to fetch the budgetId associated with a specific journalId
+  Future<String?> getBudgetIdForJournal(String? journalId) async {
+    try {
+      DocumentSnapshot journalDoc = await _db.collection('journals').doc(journalId).get();
+
+      // Check if the journal entry exists
+      if (journalDoc.exists) {
+        return journalDoc['budget'] as String?;
+      } else {
+        print('Journal entry not found for the given ID');
+        return null;
+      }
+    } catch (e) {
+      print('Error fetching budgetId for journal: $e');
+      return null;
+    }
+  }
 
 
   /// Add or update a document in a collection
@@ -257,8 +355,8 @@ class FirestoreService {
   Stream<List<Map<String, dynamic>>> getCollectionStream({
     required String collection,
   }) {
-    return _db.collection(collection).snapshots().map(
-            (snapshot) => snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
+    return _db.collection(collection).snapshots().map((snapshot) =>
+        snapshot.docs.map((doc) => {'id': doc.id, ...doc.data()}).toList());
   }
 
   /// Update a document in a collection
@@ -275,6 +373,4 @@ class FirestoreService {
       rethrow;
     }
   }
-
-
 }

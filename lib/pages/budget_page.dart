@@ -10,20 +10,19 @@ class BudgetPage extends StatefulWidget {
   @override
   State<BudgetPage> createState() => _BudgetPageState();
 }
-
 class _BudgetPageState extends State<BudgetPage> {
-  //db connection
   final FirestoreService _fsService = FirestoreService();
-  late User? currentUser = _fsService.getCurrentUser();
-
   late TextEditingController _budgetTextController;
   double? _budgetAmount;
-  late double totalSpent;
+  String? budgetId;
+  String? journalId;
+  double totalSpent = 0.0;
 
   @override
   void initState() {
     super.initState();
     _budgetTextController = TextEditingController();
+    _initializeBudgetId();
   }
 
   @override
@@ -32,37 +31,60 @@ class _BudgetPageState extends State<BudgetPage> {
     super.dispose();
   }
 
-  void _setBudget() {
-    setState(() {
-      _budgetAmount = double.tryParse(_budgetTextController.text);
-      _budgetTextController.clear();
-    });
+  Future<void> _initializeBudgetId() async {
+    // Retrieve journalId and budgetId and update the state
+    journalId = await _fsService.getJournalIdByUserIdAndDate();
+    budgetId = await _fsService.getBudgetIdForJournal(journalId!);
+    setState(() {});
+    _calculateTotalSpent();
+  }
 
+  Future<void> _setBudget() async {
+    double? enteredAmount = double.tryParse(_budgetTextController.text);
+
+    if (enteredAmount != null && journalId != null) {
+      await _fsService.setBudgetAmount(journalId!, enteredAmount);
+
+      setState(() {
+        _budgetAmount = enteredAmount;
+      });
+      _budgetTextController.clear();
+    } else {
+      print("Please enter a valid budget amount.");
+    }
   }
 
   // Collection reference for spendings
   CollectionReference spendings = FirebaseFirestore.instance.collection('spendings');
 
-  // Delete spending entry
   Future<void> deleteSpending(String id) async {
     await spendings.doc(id).delete();
+    _calculateTotalSpent(); // Recalculate after deletion
   }
 
-  // Update spending description
   Future<void> updateSpending(String id, String description) async {
     if (description.isNotEmpty) {
-      try {
-        await spendings.doc(id).update({'description': description});
-      } catch (error) {
-        print('Failed to update');
-      }
-    } else {
-      print('Enter a valid description');
+      await spendings.doc(id).update({'description': description});
     }
   }
 
+  void _calculateTotalSpent() async {
+    if (budgetId != null) {
+      final querySnapshot = await spendings
+          .where('budgetId', isEqualTo: budgetId)
+          .get();
 
-  // Show dialog to edit description for that entry
+      double newTotalSpent = 0.0;
+      for (var doc in querySnapshot.docs) {
+        newTotalSpent += (doc['amount'] ?? 0.0) as double;
+      }
+
+      setState(() {
+        totalSpent = newTotalSpent;
+      });
+    }
+  }
+
   void _showEditDialog(String id, String currentDescription) {
     TextEditingController editController = TextEditingController(text: currentDescription);
 
@@ -77,16 +99,14 @@ class _BudgetPageState extends State<BudgetPage> {
           actions: [
             TextButton(
               onPressed: () {
-                // Update
                 updateSpending(id, editController.text);
                 Navigator.of(context).pop();
+                _calculateTotalSpent();
               },
               child: Text('Save'),
             ),
             TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
+              onPressed: () => Navigator.of(context).pop(),
               child: Text('Cancel'),
             ),
           ],
@@ -97,6 +117,8 @@ class _BudgetPageState extends State<BudgetPage> {
 
   @override
   Widget build(BuildContext context) {
+    final amountLeft = (_budgetAmount ?? 0) - totalSpent;
+
     return Scaffold(
       appBar: AppBar(title: Text('Budget Tracker')),
       body: Padding(
@@ -133,24 +155,26 @@ class _BudgetPageState extends State<BudgetPage> {
                 ),
               ],
             ),
-            Padding(padding: EdgeInsets.all(5.0), child: Text('AMOUNT LEFT TO SPEND: ' + _budgetAmount.toString())),
+            Padding(
+              padding: EdgeInsets.all(5.0),
+              child: Text('AMOUNT LEFT TO SPEND: \$${amountLeft.toStringAsFixed(2)}'),
+            ),
             SizedBox(height: 20),
-            // Display spendings from Firestore
             Expanded(
-              child: StreamBuilder<QuerySnapshot>(
-
-                stream: FirebaseFirestore.instance
-                    .collection('spendings')
-                    .where('userId', isEqualTo: currentUser?.uid) // Filter by userId
+              child: budgetId == null
+                  ? Center(child: CircularProgressIndicator())
+                  : StreamBuilder<QuerySnapshot>(
+                stream: spendings
+                    .where('budgetId', isEqualTo: budgetId)
                     .snapshots(),
                 builder: (context, snapshot) {
                   if (!snapshot.hasData) return Text('Loading...');
 
                   return ListView(
                     children: snapshot.data!.docs.map((doc) {
-                      // Get values from Firestore document
                       double amount = doc['amount'] ?? 0.0;
                       String description = doc['description'] ?? 'No description';
+
                       return ListTile(
                         title: Text('\$${amount.toStringAsFixed(2)}'),
                         subtitle: Text('Description: $description'),
@@ -158,11 +182,14 @@ class _BudgetPageState extends State<BudgetPage> {
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             IconButton(
-                              onPressed: () => _showEditDialog(doc.id, description), // Edit button
+                              onPressed: () => _showEditDialog(doc.id, description),
                               icon: Icon(Icons.edit),
                             ),
                             IconButton(
-                              onPressed: () => deleteSpending(doc.id), // Delete button
+                              onPressed: () {
+                                deleteSpending(doc.id);
+                                _calculateTotalSpent();
+                              },
                               icon: Icon(Icons.delete),
                             ),
                           ],

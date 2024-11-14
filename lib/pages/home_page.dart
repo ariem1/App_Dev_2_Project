@@ -193,29 +193,46 @@ class _HomePageState extends State<HomePage> {
   /*BUDGET STUFF*/
 
   TextEditingController budgetController = TextEditingController();
-  CollectionReference spendings =
-      FirebaseFirestore.instance.collection('spendings');
+  CollectionReference spendings = FirebaseFirestore.instance.collection('spendings');
   double amount = 0.0;
   String description = '';
 
-  Future<void> addSpending() async {
-    String? userId = _fsService.getCurrentUser()?.uid;
+    Future<void> addSpending() async {
+      String? journal = await _fsService.getJournalIdByUserIdAndDate();
+      if (journal == null || journal.isEmpty) {
+        print('No journal ID found');
+        return; // Exit if no journalId is found
+      }
 
-    if (amount > 0) {
-      await spendings.add({
-        'userId': userId,
-        'amount': amount,
-        'description': description,
-        'createdAt': Timestamp.now(),
-      });
+      String? budget = await _fsService.getBudgetIdForJournal(journal);
+      if (budget == null || budget.isEmpty) {
+        print('No budget ID found for the journal');
+        return; // Exit if no budgetId is found
+      }
 
-      setState(() {
-        amount = 0.0;
-        description = '';
-        budgetController.clear();
-      });
-    }
-  }
+      double spendingAmount = double.tryParse(budgetController.text) ?? 0.0;
+      if (spendingAmount <= 0) {
+        print('Invalid spending amount');
+        return; // Exit if spending amount is not valid
+      }
+
+      try {
+        await spendings.add({
+          'budgetId': budget,
+          'amount': spendingAmount,
+          'description': description,
+        });
+        print('Spending added successfully');
+        setState(() {
+          description = '';
+          budgetController.clear();
+        });
+      } catch (e) {
+        print('Error adding spending: $e');
+      }
+      }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -396,7 +413,7 @@ class _HomePageState extends State<HomePage> {
                                   bool journalExists = await _checkJournalEntry();  // Await the check
 
                                   if (!journalExists) {
-                                    await _fsService.addJournalEntry(index, '', 0,0);
+                                    await _fsService.addJournalEntry(index, '', );
                                     print('Journal entry created and mood added');
                                   } else {
                                     //If journal exists, update the mood
