@@ -9,7 +9,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:aura_journal/firestore_service.dart';
 
 class HomePage extends StatefulWidget {
-  const HomePage({super.key});
+  final void Function(Color) onColorUpdate;
+
+  const HomePage({super.key, required this.onColorUpdate});
 
   @override
   State<HomePage> createState() => _HomePageState();
@@ -62,7 +64,7 @@ class _HomePageState extends State<HomePage> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => JournalPage(selectedDate: today),
+        builder: (context) => JournalPage(selectedDate: today, onColorUpdate: widget.onColorUpdate,),
       ),
     );
 

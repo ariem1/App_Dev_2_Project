@@ -16,18 +16,25 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  final PageController controller =
-      PageController();
+  final PageController controller = PageController();
   int index = 0;
   String _journalName = "Journal";
 
-  final List<Widget> pages = [
-    const HomePage(),
-    const MoodPage(),
-    const BudgetPage(),
-    const WaterPage(),
-  ];
   // Control flag to show ToDoPage
+  final List<Widget> pages = [];
+
+  @override
+  void initState() {
+    super.initState();
+
+    // Initialize pages inside initState to access widget properties
+    pages.addAll([
+      HomePage(onColorUpdate: widget.onColorUpdate),
+      const MoodPage(),
+      const BudgetPage(),
+      const WaterPage(),
+    ]);
+  }
 
   // Update journal name and refresh AppBar title
   void _updateJournalName(String newName) {
@@ -45,9 +52,10 @@ class _MainPageState extends State<MainPage> {
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
+            onSelected: (value) async {
               if (value == 'Settings') {
-                Navigator.push(
+                // Navigate to Settings page and wait for the result
+                final updatedName = await Navigator.push(
                   context,
                   MaterialPageRoute(
                     builder: (context) => SettingsPage(
@@ -56,11 +64,12 @@ class _MainPageState extends State<MainPage> {
                       onColorUpdate: widget.onColorUpdate,
                     ),
                   ),
-                ).then((updatedName) {
-                  if (updatedName != null) {
-                    _updateJournalName(updatedName);
-                  }
-                });
+                );
+
+                // Update the journal name if a new one was returned
+                if (updatedName != null) {
+                  _updateJournalName(updatedName);
+                }
               }
             },
             itemBuilder: (context) => [
@@ -77,30 +86,29 @@ class _MainPageState extends State<MainPage> {
         controller: controller,
         onPageChanged: (value) {
           setState(() {
-            index = value; // Update the index when page changes
+            index = value;
           });
         },
-        children: pages, // Use the pages list for PageView
+        children: pages,
       ),
       bottomNavigationBar: BottomNavBar(
         curentIndex: index,
         backgroundColor: Colors.white,
         onTap: (value) {
           setState(() {
-            index = value; // Update the index
+            index = value;
             controller.animateToPage(
               index,
               duration: const Duration(milliseconds: 300),
               curve: Curves.ease,
-            ); // Animate to the selected page
+            );
           });
         },
         children: [
           BottomNavBarItem(title: "   Home   ", icon: Icons.home_filled),
           BottomNavBarItem(title: "   Mood   ", icon: Icons.mood),
           BottomNavBarItem(title: '   Budget   ', icon: Icons.attach_money),
-          BottomNavBarItem(
-              title: "   Water   ", icon: Icons.water_drop_outlined),
+          BottomNavBarItem(title: "   Water   ", icon: Icons.water_drop_outlined),
         ],
       ),
     );
