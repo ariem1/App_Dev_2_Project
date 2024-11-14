@@ -31,6 +31,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _journalNameController = TextEditingController(text: widget.journalName);
     _selectedColor = 'Option 1';
     _selectedLanguage = 'English';
+
+    fetchJournalName();
   }
 
   Color _getColorFromOption(String colorOption) {
@@ -43,13 +45,12 @@ class _SettingsPageState extends State<SettingsPage> {
   }
 
   Future<void> fetchJournalName() async {
-    //User? user = fsService.getCurrentUser();
 
-    String? userId = fsService.getCurrentUserId();
+    String? userId = fsService.getCurrentUser()?.uid;
 
     if (userId != null) {
       final docSnapshot = await fsService.getDocument(
-        collection: 'Users',
+        collection: 'users',
         documentId: userId,
       );
       setState(() {

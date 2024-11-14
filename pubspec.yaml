@@ -37,6 +37,7 @@ dependencies:
   cloud_firestore: any
   firebase_core_platform_interface: any
   firebase_auth: any
+  image_picker: any
 
 
 

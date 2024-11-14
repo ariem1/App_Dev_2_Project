@@ -18,8 +18,46 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
+
   //db connection
   final FirestoreService _fsService = FirestoreService();
+
+  late String todayJournalId;
+
+  @override
+  void initState() {
+    super.initState();
+
+    //GETS THE MOOD IF JOURNAL EXISTS
+    _getJournalData();
+
+  }
+
+   Future<void> _getJournalData() async{
+
+     // Check for an existing journal entry asynchronously
+     bool journalExists = await _checkJournalEntry();
+     print('INITIALIZING IN INITSTATE: JOURNAL EXISTS = $journalExists');
+
+     // Get the mood if a journal exists
+     if (journalExists) {
+       todayJournalId = (await _fsService.getJournalIdByUserIdAndDate())!;  // Assuming this is async
+       print('TODAY JOURNAL ID: $todayJournalId');
+
+       // Fetch the mood for the journal entry
+       _selectedMood = (await _fsService.getJournalMood(todayJournalId))!;  // Assuming this is async
+       print('TODAY, SELECTED MOOD IN JOURNAL: $_selectedMood');
+
+       setState(() {
+
+         if(_selectedMood == null){
+           print('ITS NULL THE SELECTEDMOOD');
+         }
+         _buildIcon(_selectedMood);
+       });
+     }
+
+  }
 
   //todays date
   DateTime today = DateTime.now();
@@ -111,7 +149,9 @@ class _HomePageState extends State<HomePage> {
     });
   }
 
-  int _selectedMood = 4; //happy as defualt
+  /////////////// MOOD ///////////////////
+
+   int _selectedMood = 5 ; // DEFAULT
 
   Icon _buildIcon(int index) {
     switch (index) {
@@ -143,7 +183,7 @@ class _HomePageState extends State<HomePage> {
 
   /* FIREBASE STUFF */
 // Check if journal entry exists for today
-  Future<bool> checkJournalEntry() async {
+  Future<bool> _checkJournalEntry() async {
     bool journalExists = await _fsService.journalEntryExistsForToday();
     print('Journal exists: $journalExists');
 
@@ -353,11 +393,10 @@ class _HomePageState extends State<HomePage> {
 
 
                                   //If journal doesnt exist, make an entry
-                                  bool journalExists = await checkJournalEntry();  // Await the check
-
+                                  bool journalExists = await _checkJournalEntry();  // Await the check
 
                                   if (!journalExists) {
-                                    await _fsService.addJournalEntry(_selectedMood, '', 0,0);
+                                    await _fsService.addJournalEntry(index, '', 0,0);
                                     print('Journal entry created and mood added');
                                   } else {
                                     //If journal exists, update the mood
@@ -366,7 +405,7 @@ class _HomePageState extends State<HomePage> {
 
                                     //update mood
                                     _fsService.updateJournalMood(
-                                        journalId!, _selectedMood);
+                                        journalId!, index);
                                   }
 
                                   setState(() {

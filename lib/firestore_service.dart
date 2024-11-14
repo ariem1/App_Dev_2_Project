@@ -69,18 +69,19 @@ class FirestoreService {
   Future<void> updateJournalName(String newJournalName) async {
     try{
       String? currentUserId = getCurrentUserId();
-      
+      print('Journal name for ${currentUserId} is being updated');
+
       //update the user's journal name
-      await _db.collection('Users').doc(currentUserId).update({
+      await _db.collection('users').doc(currentUserId).update({
         'journalName' : newJournalName,
       });
 
       //print JournalName
-      print('Journal name for ${_user?.uid} updated successfully to');
-      DocumentSnapshot user_journalName = await _db.collection('Users').doc(_user?.uid).get();
+      print('Journal name for ${currentUserId} updated successfully to');
+      DocumentSnapshot user_journalName = await _db.collection('users').doc(currentUserId).get();
       print(user_journalName);
     } catch (e){
-      print('Journal name failed to update: $e');
+      print('Journal name failed to update: $e $newJournalName');
     }
   }
 
@@ -148,11 +149,11 @@ class FirestoreService {
   }
 
   // Method to fetch all journal entries for a user
-  Future<List<Map<String, dynamic>>> getJournalEntries(String userId) async {
+  Future<List<Map<String, dynamic>>> getJournalEntries() async {
     try {
       QuerySnapshot snapshot = await _db
           .collection('journals')
-          .where('userId', isEqualTo: userId)
+          .where('userId', isEqualTo: _userId)
           .get();
 
       List<Map<String, dynamic>> entries = [];
@@ -198,6 +199,27 @@ class FirestoreService {
       return null;
     }
   }
+
+  // Method to fetch the mood from a specific journal entry by its ID
+  Future<int?> getJournalMood(String journalId) async {
+    try {
+      // Fetch the journal entry by its ID
+      DocumentSnapshot journalDoc = await _db.collection('journals').doc(journalId).get();
+
+      // Check if the journal entry exists
+      if (journalDoc.exists) {
+        // Extract the 'mood' field from the document and return it
+        return journalDoc['mood'] as int?;
+      } else {
+        print('Journal entry not found for the given ID');
+        return null; // Journal entry not found
+      }
+    } catch (e) {
+      print('Error fetching journal mood: $e');
+      return null; // Return null in case of an error
+    }
+  }
+
 
   // Add budget to collection
 
