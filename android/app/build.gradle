@@ -22,7 +22,7 @@ android {
 
     defaultConfig {
         applicationId "com.example.aura_journal"
-        minSdkVersion 23  // Change this to 23
+        minSdkVersion 23
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutter.versionCode
         versionName flutter.versionName

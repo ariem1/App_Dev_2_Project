@@ -1,5 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'settings_page.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io'; // For File operations
@@ -20,8 +21,8 @@ class _JournalPageState extends State<JournalPage> {
   String _journalName = "Journal";
   late String _journalEntryTitle;
 
-  TextEditingController _journalTitleController = new TextEditingController();
-  TextEditingController _journalDescController = new TextEditingController();
+  TextEditingController _journalTitleController = TextEditingController();
+  TextEditingController _journalDescController = TextEditingController();
 
   // Update journal name and refresh AppBar title
   void _updateJournalName(String newName) {
@@ -36,6 +37,8 @@ class _JournalPageState extends State<JournalPage> {
 
   // Method to pick an image from the gallery
   Future<void> _pickImage() async {
+    print('Pick picture');
+
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile =
         await picker.pickImage(source: ImageSource.gallery);
@@ -49,6 +52,7 @@ class _JournalPageState extends State<JournalPage> {
 
   // Method to capture an image using the camera
   Future<void> _takePicture() async {
+    print('Take picture');
     final ImagePicker picker = ImagePicker();
     final XFile? pickedFile =
         await picker.pickImage(source: ImageSource.camera);
@@ -60,50 +64,59 @@ class _JournalPageState extends State<JournalPage> {
     }
   }
 
+  // Show BottomSheet with image options
+  void _showImageOptions() {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Upload Image'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _pickImage(); // Call pick image method
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Take Picture'),
+                onTap: () {
+                  Navigator.pop(context);
+                  _takePicture(); // Call take picture method
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  /////////////// JOURNAL ENTRY /////////////////
+  DateTime _dateToday = DateTime.now();
+
+  ///////////////////////////////////////////////// WIDGET////////////////////
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Journal Entry'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'Settings') {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SettingsPage(
-                      journalName: _journalName,
-                      onNameUpdated: _updateJournalName,
-                      onColorUpdate: widget.onColorUpdate,
-                    ),
-                  ),
-                ).then((updatedName) {
-                  if (updatedName != null) {
-                    _updateJournalName(updatedName);
-                  }
-                });
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem<String>(
-                value: 'Settings',
-                child: Text('Settings'),
-              ),
-            ],
-          ),
-        ],
       ),
       body: Center(
           child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
             padding: EdgeInsets.only(bottom: 5),
             margin: EdgeInsets.only(top: 10),
             decoration: BoxDecoration(
               border: Border(
-                bottom: BorderSide(color: Colors.black, width: 1),
+                bottom: BorderSide(color: Colors.black54, width: 1),
               ),
             ),
             child: Row(
@@ -125,10 +138,12 @@ class _JournalPageState extends State<JournalPage> {
                       TextField(
                         controller: _journalDescController,
                         decoration: InputDecoration(
-                          hintText: 'Title', // Default text when empty
+                          hintText:
+                              'Description / Quote', // Default text when empty
                           border: InputBorder.none,
                         ),
-                        style: TextStyle(fontSize: 18, color: Colors.pink[70]),
+                        style:
+                            TextStyle(fontSize: 18, color: Colors.purple[400]),
                       ),
                     ],
                   ),
@@ -136,7 +151,7 @@ class _JournalPageState extends State<JournalPage> {
                 // Displaying the selected image or the Add Image icon
                 _image == null
                     ? GestureDetector(
-                        onTap: _pickImage, // Allow the user to pick an image
+                        onTap: _showImageOptions, // Show options when pressed
                         child: Container(
                           width: 100,
                           height: 100,
@@ -152,24 +167,77 @@ class _JournalPageState extends State<JournalPage> {
                           ),
                         ),
                       )
-                    : Image.file(
-                        _image!, // Display the selected image
-                        width: 100,
-                        height: 100,
-                        fit: BoxFit.cover,
+                    : GestureDetector(
+                        onTap: _showImageOptions, // Show options when pressed
+                        child: Image.file(
+                          _image!, // Display the selected image
+                          width: 100,
+                          height: 100,
+                          fit: BoxFit.cover,
+                        ),
                       ),
                 SizedBox(height: 20),
-                // ElevatedButton(
-                //   onPressed: _pickImage, // Pick image from gallery
-                //   child: Text('Pick Image from Gallery'),
-                // ),
-                // ElevatedButton(
-                //   onPressed: _takePicture, // Capture image using camera
-                //   child: Text('Capture Image using Camera'),
-                // ),
               ],
             ),
-          )
+          ),
+          Container(
+              margin: EdgeInsets.only(top: 10, left: 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('${DateFormat('MMMM dd, yyyy').format(widget.selectedDate)}'),
+                  SizedBox(
+                    height: 20,
+                  ),
+                  Container(
+                    width: 372,
+                    height: 200,
+                    child: Text(
+                        'datawrtbwrthbwrthwhdatawrtbwrthbwrthwhdatawrtbwrthbwrthwh \n'
+                            'datawrtbwrthbwrthwhdatawrtbwrthbwrthwhdatawrtbwrthbwrthwh'),
+                  ),
+                  // Image.file(
+                  //   _image!, // Display the selected image
+                  //   width: 150,
+                  //   height: 150,
+                  //   fit: BoxFit.cover,
+                  // ),
+
+                  Container(
+                    width: 300,
+                    height: 150,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[200],
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.grey),
+                    ),
+                    child:  Icon(
+                      Icons.add_a_photo,
+                      size: 100,
+                      color: Colors.blue,
+                    ),
+                  ),
+
+                ],
+              )),
+          Container(
+            margin: EdgeInsets.only(top: 20),
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 20),
+            decoration: BoxDecoration(
+              border: Border(bottom: BorderSide(color: Colors.grey), top: BorderSide(color: Colors.grey) ),
+            ),
+            child:  Row(
+              children: [
+                Icon(Icons.image, size: 50,),
+                Container(
+                  child: Column(
+                    children: [Text('data')],
+                  ),
+                )
+              ],
+            ),
+          ),
+
         ],
       )),
     );
