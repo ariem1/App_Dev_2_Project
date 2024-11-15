@@ -34,6 +34,12 @@ class _JournalPageState extends State<JournalPage> {
     });
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchAndDisplayJournalEntryWhenLoad();
+  }
+
   ///////////// FOR IMAGE /////////////////
 
   File? _image;
@@ -122,6 +128,47 @@ class _JournalPageState extends State<JournalPage> {
     );
   }
 
+  void _fetchAndDisplayJournalEntryWhenLoad() async {
+    //String journalEntry = await _fsService.fetchJournalEntry();
+    String title = await _fsService.fetchJournalData('title');
+    String content = await _fsService.fetchJournalData('entry');
+    String desc = await _fsService.fetchJournalData('description');
+
+    String? journalId = await _fsService.getJournalIdByUserIdAndDate();
+    int? mood = await _fsService.getJournalMood(journalId!);
+
+    if (title != null) {
+      setState(() {
+        _journalTitleController.text = title;
+      });
+    }
+
+    if (desc != null) {
+      setState(() {
+        _journalDescController.text = desc;
+      });
+    }
+    if (content != null) {
+      setState(() {
+        _entryController.text = content;
+      });
+    }
+    //
+    // setState(() {
+    //   _buildIcon(mood!);
+    //
+    // });
+
+
+  }
+
+  void _fetchAndDisplayJournalEntry() async {
+    String journalEntry = await _fsService.fetchJournalEntry();
+    setState(() {
+      _entryController.text = journalEntry;
+    });
+  }
+
   // List to store water drop icons
   List<Widget> droplets = [];
 
@@ -176,6 +223,25 @@ class _JournalPageState extends State<JournalPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Journal Entry'),
+        actions: [
+          // Updating the AppBar Icon dynamically based on the editing state
+          IconButton(
+            onPressed: () async {
+              if (isEditing) {
+                await _saveToDatabase();
+                ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Journal entry saved!')));
+              } else {
+                print('Jounral entry displaying');
+                _fetchAndDisplayJournalEntry();
+              }
+              setState(() {
+                isEditing = !isEditing;
+              });
+            },
+            icon: Icon(isEditing ? Icons.check : Icons.edit, size: 20),
+          )
+        ],
       ),
       body: SingleChildScrollView(
         child: Center(
@@ -193,33 +259,86 @@ class _JournalPageState extends State<JournalPage> {
               child: Row(
                 children: [
                   Container(
-                    width: 270,
-                    margin: EdgeInsets.only(left: 20),
+                    width: 260,
+                    margin: EdgeInsets.only(left: 20, right: 10),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        TextField(
-                          controller: _journalTitleController,
-                          decoration: InputDecoration(
-                            hintText: 'Title', // Default text when empty
-                            border: InputBorder.none,
-                          ),
-                          style: TextStyle(fontSize: 25),
-                        ),
-                        TextField(
-                          controller: _journalDescController,
-                          decoration: InputDecoration(
-                            hintText:
-                                'Description / Quote', // Default text when empty
-                            border: InputBorder.none,
-                          ),
-                          style: TextStyle(
-                              fontSize: 18, color: Colors.purple[400]),
-                        ),
+                        // Journal title field or text
+                        isEditing
+                            ? TextField(
+                                controller: _journalTitleController,
+                                decoration: const InputDecoration(
+                                  hintText: 'Add a journal title',
+                                  hintStyle: TextStyle(fontSize: 22),
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.all(0),
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors
+                                          .grey, // Color of the bottom border when not focused
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.purple,
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                ),
+                                style: TextStyle(
+                                    fontSize: 25,
+                                    fontWeight: FontWeight.normal),
+                              )
+                            : Text(
+                                _journalTitleController.text.isEmpty
+                                    ? 'Title'
+                                    : _journalTitleController.text,
+                                style: TextStyle(fontSize: 25),
+                              ),
+
+                        SizedBox(height: 10),
+
+                        // Journal description field
+                        isEditing
+                            ? TextField(
+                                controller: _journalDescController,
+                                decoration: InputDecoration(
+                                  hintStyle: TextStyle(fontSize: 17),
+                                  hintText: 'Add a description or quote',
+                                  isDense: true,
+                                  contentPadding: EdgeInsets.all(0),
+                                  enabledBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors.grey,
+                                      width: 1.0,
+                                    ),
+                                  ),
+                                  focusedBorder: UnderlineInputBorder(
+                                    borderSide: BorderSide(
+                                      color: Colors
+                                          .purple, // Color of the bottom border when focused
+                                      width: 1.0, // Thicker border on focus
+                                    ),
+                                  ),
+                                ),
+                                style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.normal),
+                              )
+                            : Text(
+                                _journalDescController.text.isEmpty
+                                    ? 'Description / Quote'
+                                    : _journalDescController.text,
+                                style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.normal),
+                              ),
                       ],
                     ),
                   ),
-                  // Displaying the selected image or the Add Image icon
+                  // Image
                   _image == null
                       ? GestureDetector(
                           onTap: _showImageOptions, // Show options when pressed
@@ -263,37 +382,38 @@ class _JournalPageState extends State<JournalPage> {
                         SizedBox(
                           width: 200,
                         ),
-                        IconButton(
-                          onPressed: () async {
-                            if (isEditing) {
-                              await _saveToDatabase(); // Save to the database
-                            }
-                            setState(() {
-                              isEditing = !isEditing; // Toggle editing mode
-                            });
-                          },
-                          icon: Icon(isEditing ? Icons.check : Icons.edit, size: 20),
-                        ),
                       ],
                     ),
                     Container(
                       width: 372,
                       height: 200,
+                      margin: EdgeInsets.symmetric(vertical: 10),
                       child: isEditing
-                          ? Expanded(
+                          ? SingleChildScrollView(
                               child: TextField(
+                                style: TextStyle(fontSize: 17),
                                 controller: _entryController,
                                 decoration: InputDecoration(
-                                 border: OutlineInputBorder(),
+                                  contentPadding: EdgeInsets.all(0),
                                   hintText: 'Add a journal entry',
                                 ),
+                                maxLines:
+                                    null, // Allow unlimited lines, so text wraps
+                                keyboardType: TextInputType
+                                    .multiline, // Enable multiline input
                               ),
                             )
-                          : Text(_entryController.text),
+                          : SingleChildScrollView(
+                              // Wrap text content with a scroll view for long text
+                              child: Text(
+                                _entryController.text,
+                                style: TextStyle(fontSize: 17),
+                              ),
+                            ),
                     ),
                     Container(
-                      width: 300,
-                      height: 150,
+                      width: 250,
+                      height: 130,
                       decoration: BoxDecoration(
                         color: Colors.grey[200],
                         borderRadius: BorderRadius.circular(12),

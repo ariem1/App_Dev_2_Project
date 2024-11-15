@@ -131,6 +131,8 @@ class FirestoreService {
         'mood': mood,
         'content': content,
         'budget': null, //null for now
+        'title': '',
+        'description': '',
       });
       print('Journal entry added successfully');
 
@@ -167,6 +169,75 @@ class FirestoreService {
     }
   }
 
+  // Fetch journal entry
+  Future<String> fetchJournalEntry() async {
+
+    try {
+      String? userId = getCurrentUserId();
+
+      String? journalId = await getJournalIdByUserIdAndDate();
+
+      var snapshot = await FirebaseFirestore.instance
+          .collection('journals')
+          .doc(journalId)
+          .get();
+
+      print('Fetching journal entry');
+      if (snapshot.exists) {
+        return snapshot['content'];
+      } else {
+        print('No journal entry found for today');
+        return '';
+      }
+    } catch (e) {
+      print('Error fetching journal entry: $e');
+      return '';
+    }
+  }
+
+  Future<String> fetchJournalData(String data) async {
+    try {
+      String? userId = getCurrentUserId();
+      String? journalId = await getJournalIdByUserIdAndDate();
+
+      if (journalId == null) {
+        print('No journal found for the user today.');
+        return ''; // Return empty if journalId is invalid
+      }
+
+      print('Fetching journal entry for ID: $journalId');
+      var snapshot = await FirebaseFirestore.instance
+          .collection('journals')
+          .doc(journalId)
+          .get();
+
+      if (!snapshot.exists) {
+        print('No journal found for today');
+        return '';
+      }
+
+      // Fetch and return the requested data
+      return _getJournalField(snapshot, data);
+    } catch (e) {
+      print('Error fetching journal entry: $e');
+      return '';
+    }
+  }
+
+
+  String _getJournalField(DocumentSnapshot snapshot, String data) {
+    switch (data) {
+      case 'title':
+        return snapshot['title'] ?? '';
+      case 'entry':
+        return snapshot['content'] ?? '';
+      case 'description':
+        return snapshot['description'] ?? '';
+      default:
+        print('Invalid data field requested');
+        return '';
+    }
+  }
 
 
   // Update a journal - mood
@@ -185,7 +256,7 @@ class FirestoreService {
   }
 
   // Method to fetch all journal entries for a user
-  Future<List<Map<String, dynamic>>> getJournalEntries() async {
+  Future<List<Map<String, dynamic>>> getAllJournalEntries() async {
     try {
       QuerySnapshot snapshot = await _db
           .collection('journals')
@@ -307,7 +378,8 @@ class FirestoreService {
           'amount': amount,
           'journalId': journalId,
         });
-        print("New budget entry created with amount: $amount for journal ID: $journalId");
+        print(
+            "New budget entry created with amount: $amount for journal ID: $journalId");
       }
     } catch (e) {
       print("Error setting budget amount: $e");
@@ -317,7 +389,8 @@ class FirestoreService {
   // Method to fetch the budgetId associated with a specific journalId
   Future<String?> getBudgetIdForJournal(String? journalId) async {
     try {
-      DocumentSnapshot journalDoc = await _db.collection('journals').doc(journalId).get();
+      DocumentSnapshot journalDoc =
+          await _db.collection('journals').doc(journalId).get();
 
       // Check if the journal entry exists
       if (journalDoc.exists) {
@@ -332,23 +405,22 @@ class FirestoreService {
     }
   }
 
-  Future<double?> getBudgetAmount(String budgetId)async{
-    try{
+  Future<double?> getBudgetAmount(String budgetId) async {
+    try {
       final budgetDoc = await FirebaseFirestore.instance
           .collection('budgets')
           .doc(budgetId)
           .get();
 
-      if(budgetDoc.exists && budgetDoc.data() !=null){
+      if (budgetDoc.exists && budgetDoc.data() != null) {
         return budgetDoc['amount'] as double?;
       }
       return null;
-    }catch(e){
+    } catch (e) {
       print("Error retrieving budget amount: $e");
       return null;
     }
   }
-
 
   /// Add or update a document in a collection
   Future<void> setData({
