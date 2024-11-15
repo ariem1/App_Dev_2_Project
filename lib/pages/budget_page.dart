@@ -29,16 +29,26 @@ class _BudgetPageState extends State<BudgetPage> {
   void dispose() {
     _budgetTextController.dispose();
     super.dispose();
+
+
   }
 
   Future<void> _initializeBudgetId() async {
     // Retrieve journalId and budgetId and update the state
     journalId = await _fsService.getJournalIdByUserIdAndDate();
     budgetId = await _fsService.getBudgetIdForJournal(journalId!);
-    setState(() {});
+
+    if(budgetId !=null){
+      final budgetAmount = await _fsService.getBudgetAmount( budgetId!);
+      setState(() {
+        _budgetAmount = budgetAmount;
+      });
+    }
+
     _calculateTotalSpent();
   }
 
+  //function to set budget
   Future<void> _setBudget() async {
     double? enteredAmount = double.tryParse(_budgetTextController.text);
 
@@ -54,9 +64,11 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
+
   // Collection reference for spendings
   CollectionReference spendings = FirebaseFirestore.instance.collection('spendings');
 
+  //delete spending
   Future<void> deleteSpending(String id) async {
     await spendings.doc(id).delete();
     _calculateTotalSpent(); // Recalculate after deletion
@@ -82,8 +94,34 @@ class _BudgetPageState extends State<BudgetPage> {
       setState(() {
         totalSpent = newTotalSpent;
       });
+
+      if(_budgetAmount != null && totalSpent > _budgetAmount!){
+        double overspendAmount = totalSpent - _budgetAmount!;
+        _showOverSpendingDialog(overspendAmount);
+      }
     }
   }
+
+  void _showOverSpendingDialog(double overspendAmount){
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: Text('Overspending Alert',style: TextStyle(color: Colors.red),),
+          content:Text('You are $overspendAmount over your budget'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: Text('Got it'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
 
   void _showEditDialog(String id, String currentDescription) {
     TextEditingController editController = TextEditingController(text: currentDescription);

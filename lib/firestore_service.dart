@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 class FirestoreService {
   // Singleton pattern for easy access
@@ -60,7 +61,6 @@ class FirestoreService {
     return _auth.currentUser;
   }
 
-  ///// Get user id -- dont really need this/////
   String? getCurrentUserId() {
     return _auth.currentUser?.uid;
   }
@@ -277,27 +277,18 @@ class FirestoreService {
           .get();
 
       if (snapshot.docs.isNotEmpty) {
+        // Update the existing document with the new amount
         String budgetId = snapshot.docs.first.id;
-        double currentAmount = snapshot.docs.first['amount'];
-
-        // If the current amount is different from the new amount, update it
-        if (currentAmount != amount) {
-          await _db.collection('budgets').doc(budgetId).update({
-            'amount': amount,
-          });
-          print(
-              "Budget amount updated successfully for journal ID: $journalId");
-        } else {
-          print("No update needed. The budget amount is already the same.");
-        }
+        await _db.collection('budgets').doc(budgetId).update({
+          'amount': amount,
+        });
+        print("Budget amount updated successfully for journal ID: $journalId");
       } else {
-        // If no exist create a new one
-        DocumentReference budget = await _db.collection('budgets').add({
+        await _db.collection('budgets').add({
           'amount': amount,
           'journalId': journalId,
         });
-        print(
-            "New budget entry created with amount: $amount for journal ID: $journalId");
+        print("New budget entry created with amount: $amount for journal ID: $journalId");
       }
     } catch (e) {
       print("Error setting budget amount: $e");
@@ -318,6 +309,23 @@ class FirestoreService {
       }
     } catch (e) {
       print('Error fetching budgetId for journal: $e');
+      return null;
+    }
+  }
+
+  Future<double?> getBudgetAmount(String budgetId)async{
+    try{
+      final budgetDoc = await FirebaseFirestore.instance
+          .collection('budgets')
+          .doc(budgetId)
+          .get();
+
+      if(budgetDoc.exists && budgetDoc.data() !=null){
+        return budgetDoc['amount'] as double?;
+      }
+      return null;
+    }catch(e){
+      print("Error retrieving budget amount: $e");
       return null;
     }
   }
