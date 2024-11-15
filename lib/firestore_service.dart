@@ -115,7 +115,7 @@ class FirestoreService {
     }
   }
 
-  // Method to add a journal entry
+  // Method to add a journal
   Future<void> addJournalEntry(
     int mood,
     String content,
@@ -150,7 +150,26 @@ class FirestoreService {
     }
   }
 
-  // Method to update a journal entry
+  // Update a journal - entry
+  Future<void> updateJournalEntry(String entry) async {
+    try {
+      String? userId = getCurrentUserId();
+
+      String? journalId = await getJournalIdByUserIdAndDate();
+
+      // Update the mood of the day's journal entry
+      await _db.collection('journals').doc(journalId).update({
+        'content': entry,
+      });
+      print('Journal entry / content updated successfully');
+    } catch (e) {
+      print('Error updating journal entry / content: $e');
+    }
+  }
+
+
+
+  // Update a journal - mood
   Future<void> updateJournalMood(String journalId, int mood) async {
     try {
       String? userId = getCurrentUserId();
