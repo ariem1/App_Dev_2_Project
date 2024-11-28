@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 class FirestoreService {
   // Singleton pattern for easy access
@@ -117,7 +120,8 @@ class FirestoreService {
 
   // Method to add a journal
   Future<void> addJournalEntry(
-    int mood,
+      int water,
+      int mood,
     String content,
   ) async {
     try {
@@ -133,6 +137,9 @@ class FirestoreService {
         'budget': null, //null for now
         'title': '',
         'description': '',
+        'water': water,
+        'imagePath': ''
+
       });
       print('Journal entry added successfully');
 
@@ -153,7 +160,7 @@ class FirestoreService {
   }
 
   // Update a journal - entry
-  Future<void> updateJournalEntry(String entry) async {
+  Future<void> updateJournalEntry(String entry, String desc, String title) async {
     try {
       String? userId = getCurrentUserId();
 
@@ -162,6 +169,9 @@ class FirestoreService {
       // Update the mood of the day's journal entry
       await _db.collection('journals').doc(journalId).update({
         'content': entry,
+        'description': desc,
+        'title': title,
+
       });
       print('Journal entry / content updated successfully');
     } catch (e) {
@@ -169,40 +179,15 @@ class FirestoreService {
     }
   }
 
-  // Fetch journal entry
-  Future<String> fetchJournalEntry() async {
-
-    try {
-      String? userId = getCurrentUserId();
-
-      String? journalId = await getJournalIdByUserIdAndDate();
-
-      var snapshot = await FirebaseFirestore.instance
-          .collection('journals')
-          .doc(journalId)
-          .get();
-
-      print('Fetching journal entry');
-      if (snapshot.exists) {
-        return snapshot['content'];
-      } else {
-        print('No journal entry found for today');
-        return '';
-      }
-    } catch (e) {
-      print('Error fetching journal entry: $e');
-      return '';
-    }
-  }
-
-  Future<String> fetchJournalData(String data) async {
+  //Fetches the data of a journal
+  Future<Map<String, dynamic>> fetchJournalData() async {
     try {
       String? userId = getCurrentUserId();
       String? journalId = await getJournalIdByUserIdAndDate();
 
       if (journalId == null) {
         print('No journal found for the user today.');
-        return ''; // Return empty if journalId is invalid
+        return {}; // Return an empty map if no journal is found
       }
 
       print('Fetching journal entry for ID: $journalId');
@@ -213,29 +198,71 @@ class FirestoreService {
 
       if (!snapshot.exists) {
         print('No journal found for today');
-        return '';
+        return {};
       }
 
-      // Fetch and return the requested data
-      return _getJournalField(snapshot, data);
+      // Return all relevant fields in a map
+      return {
+        'title': snapshot.get('title') ?? '',
+        'description': snapshot.get('description') ?? '',
+        'content': snapshot.get('content') ?? '',
+        'mood': snapshot.get('mood') ?? '',
+        'entryDate': snapshot.get('entryDate') ?? '',
+        'water': snapshot.get('water') ?? 0,
+        'imagePath':  snapshot.get('imagePath') ?? '',
+
+
+
+      };
     } catch (e) {
       print('Error fetching journal entry: $e');
-      return '';
+      return {};
     }
   }
 
+  //Fetches the data of a journal
+  Future<Map<String, dynamic>> fetchJournalDataByDateAndUser(
+      DateTime selectedDate) async {
+    // Get start and end of the target day
+    DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    DateTime endOfDay = startOfDay.add(Duration(days: 1));
+    String? userId = getCurrentUserId();
 
-  String _getJournalField(DocumentSnapshot snapshot, String data) {
-    switch (data) {
-      case 'title':
-        return snapshot['title'] ?? '';
-      case 'entry':
-        return snapshot['content'] ?? '';
-      case 'description':
-        return snapshot['description'] ?? '';
-      default:
-        print('Invalid data field requested');
-        return '';
+    print('Journal: for $userId');
+
+
+    try {
+      // Query Firestore for a journal entry with the userId and within the date range
+      var querySnapshot = await FirebaseFirestore.instance
+          .collection('journals')
+          .where('userId', isEqualTo: userId) // Filter by userId
+          .where('entryDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay)) // Start of day
+          .where('entryDate', isLessThan: Timestamp.fromDate(endOfDay)) // End of day
+          .get();
+
+      // Check if any documents match the query
+      if (querySnapshot.docs.isEmpty) {
+        print('No journal entry found for the provided user and date.');
+        return {};
+      }
+
+      // Assuming only one journal entry per user per day, fetch the first result
+      var document = querySnapshot.docs.first;
+
+      // Return all relevant fields in a map
+      return {
+        'title': document.get('title') ?? '',
+        'description': document.get('description') ?? '',
+        'content': document.get('content') ?? '',
+        'mood': document.get('mood') ?? '',
+        'entryDate': document.get('entryDate') ?? '',
+        'water': document.get('water') ?? 0,
+        'imagePath':  document.get('imagePath') ?? '',
+
+      };
+    } catch (e) {
+      print('Journal: Errorr fetching journal entry: $e for $userId');
+      return {};
     }
   }
 
@@ -252,6 +279,20 @@ class FirestoreService {
       print('Journal mood updated successfully');
     } catch (e) {
       print('Error updating journal entry mood: $e');
+    }
+  }
+
+  // Update a journal - mood
+  Future<void> updateJournalWater(String journalId, int water) async {
+    try {
+
+      // Update the mood of the day's journal entry
+      await _db.collection('journals').doc(journalId).update({
+        'water': water,
+      });
+      print('Journal water updated successfully');
+    } catch (e) {
+      print('Error updating journal entry water: $e');
     }
   }
 
@@ -309,16 +350,14 @@ class FirestoreService {
     }
   }
 
-  // Method to fetch the mood from a specific journal entry by its ID
+  // mood from a specific journal entry by its ID
   Future<int?> getJournalMood(String journalId) async {
     try {
-      // Fetch the journal entry by its ID
       DocumentSnapshot journalDoc =
           await _db.collection('journals').doc(journalId).get();
 
       // Check if the journal entry exists
       if (journalDoc.exists) {
-        // Extract the 'mood' field from the document and return it
         return journalDoc['mood'] as int?;
       } else {
         print('Journal entry not found for the given ID');
@@ -326,9 +365,61 @@ class FirestoreService {
       }
     } catch (e) {
       print('Error fetching journal mood: $e');
-      return null; // Return null in case of an error
+      return null;
     }
   }
+
+  //Upload image to Firebase
+  Future<String?> uploadImageToFirebase(File image) async {
+    try {
+      print('step 3');
+
+      // Create a unique file name for the image
+      String fileName = DateTime.now().millisecondsSinceEpoch.toString();
+      print('Imageee uploaded successfully. Path: images/$fileName');
+
+      // Reference to the Firebase Storage location
+     Reference storageRef = FirebaseStorage.instance.ref().child('images/$fileName');
+
+
+
+      // Upload the image file
+  UploadTask uploadTask = storageRef.putFile(image);
+
+      // Wait for the upload to complete
+      TaskSnapshot snapshot = await uploadTask;
+
+      // Get the image's download URL
+      String downloadURL = await snapshot.ref.getDownloadURL();
+
+      if (downloadURL != ""){
+        print('Download URL: $downloadURL');
+
+      } else{
+        print('booty');
+      }
+      print('Image uploaded successfully. Path: images/$fileName');
+      return downloadURL;
+    } catch (e) {
+      print('Error uploading image: $e');
+      return null;
+    }
+  }
+
+  Future<void> saveImageURLToFirestore(String imageURL) async {
+    try {
+      await FirebaseFirestore.instance.collection('images').add({
+        'url': imageURL,
+        'uploadedAt': Timestamp.now(),
+      });
+      print('Image URL saved to Firestore successfully.');
+    } catch (e) {
+      print('Error saving image URL to Firestore: $e');
+    }
+  }
+
+
+
 
   //Create budget entry
   Future<String> createBudgetEntry(String journalId) async {
@@ -422,20 +513,7 @@ class FirestoreService {
     }
   }
 
-  /// Add or update a document in a collection
-  Future<void> setData({
-    required String collection,
-    required String documentId,
-    required Map<String, dynamic> data,
-  }) async {
-    try {
-      await _db.collection(collection).doc(documentId).set(data);
-      print("Document written to Firestore");
-    } catch (e) {
-      print("Error writing document: $e");
-      rethrow;
-    }
-  }
+
 
   /// Get a single document by its ID
   Future<DocumentSnapshot<Map<String, dynamic>>> getDocument({

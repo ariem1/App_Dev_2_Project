@@ -23,6 +23,7 @@ class _HomePageState extends State<HomePage> {
   final FirestoreService _fsService = FirestoreService();
 
   late String todayJournalId;
+ // late int _selectedMood;
 
   @override
   void initState() {
@@ -30,39 +31,41 @@ class _HomePageState extends State<HomePage> {
 
     //GETS THE MOOD IF JOURNAL EXISTS
     _getJournalData();
-
   }
 
-   Future<void> _getJournalData() async{
+  Future<void> _getJournalData() async {
+    try {
+      // Fetch journal data in a single call
+      final journalData = await _fsService.fetchJournalData();
 
-     // Check for an existing journal entry asynchronously
-     bool journalExists = await _checkJournalEntry();
-     print('INITIALIZING IN INITSTATE: JOURNAL EXISTS = $journalExists');
+      if (journalData.isEmpty) {
+        print('No journal data available.');
+        return;
+      }
 
-     // Get the mood if a journal exists
-     if (journalExists) {
-       todayJournalId = (await _fsService.getJournalIdByUserIdAndDate())!;  // Assuming this is async
-       print('TODAY JOURNAL ID: $todayJournalId');
+      setState(() {
+        // Extract and update relevant fields
+        todayJournalId = journalData['journalId'] ?? '';
+        _selectedMood = journalData['mood'] ?? 5;
+        droplets = List.generate(
+          (journalData['water'] ?? 0) as int, // Ensure water is treated as an integer
+              (_) => Icon(Icons.water_drop_outlined, size: 30),
+        );
+      });
 
-       // Fetch the mood for the journal entry
-       _selectedMood = (await _fsService.getJournalMood(todayJournalId))!;  // Assuming this is async
-       print('TODAY, SELECTED MOOD IN JOURNAL: $_selectedMood');
-
-       setState(() {
-
-         if(_selectedMood == null){
-           print('ITS NULL THE SELECTEDMOOD');
-         }
-         _buildIcon(_selectedMood);
-       });
-     }
-
+      print('Journal data loaded: $journalData');
+    } catch (e) {
+      print('Error fetching journal data: $e');
+    }
   }
+
 
   //todays date
   DateTime today = DateTime.now();
 
-  void _onDaySelected(DateTime day, DateTime focusedDay) {
+  void _onDaySelected(DateTime day, DateTime focusedDay) async {
+
+    print('focused day ${focusedDay}');
     setState(() {
       today = day;
     });
@@ -97,12 +100,24 @@ class _HomePageState extends State<HomePage> {
 
     //Create journal if not exist
 
+    //If journal doesnt exist, make an entry
+    bool journalExists = await _checkJournalEntry(); // Await the check
+
+    if (!journalExists && focusedDay!=DateTime.now()) {
+      await _fsService.addJournalEntry(
+          0, -1, '');
+      print(
+          'Journal entry created');
+    }
+
 
     // Navigate to the new page with the selected date
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (context) => JournalPage(selectedDate: today, onColorUpdate: widget.onColorUpdate,),
+        builder: (context) =>
+            JournalPage(
+              selectedDate: today, onColorUpdate: widget.onColorUpdate,),
       ),
     );
 
@@ -138,49 +153,6 @@ class _HomePageState extends State<HomePage> {
     }
   }
 
-  // List to store water drop icons
-  List<Widget> droplets = [];
-
-  // Function to add a droplet
-  void _addDroplet() {
-    setState(() {
-      droplets
-          .add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
-    });
-  }
-
-  /////////////// MOOD ///////////////////
-
-   int _selectedMood = 5 ; // DEFAULT
-
-  Icon _buildIcon(int index) {
-    switch (index) {
-      case 0:
-        return Icon(Icons.sentiment_very_dissatisfied); // Lowest rating
-      case 1:
-        return Icon(Icons.sentiment_dissatisfied); // Moderate-low rating
-      case 2:
-        return Icon(Icons.sentiment_neutral); // Neutral rating
-      case 3:
-        return Icon(Icons.sentiment_satisfied); // Moderate-high rating
-      case 4:
-        return Icon(Icons.sentiment_very_satisfied); // Highest rating
-      default:
-        return Icon(Icons.star_border); // Default icon
-    }
-  }
-
-  Icon _moodToDisplay(int index) {
-    return Icon(
-      _buildIcon(index).icon,
-      size: 70,
-    );
-  }
-
-  bool showToDoPage = false;
-
-  final PageController _pageController = PageController(initialPage: 0);
-
   /* FIREBASE STUFF */
 // Check if journal entry exists for today
   Future<bool> _checkJournalEntry() async {
@@ -190,12 +162,74 @@ class _HomePageState extends State<HomePage> {
     return journalExists;
   }
 
-  /*BUDGET STUFF*/
+  // List to store water drop icons
+  List<Widget> droplets = [];
 
-  TextEditingController budgetController = TextEditingController();
-  CollectionReference spendings = FirebaseFirestore.instance.collection('spendings');
-  double amount = 0.0;
-  String description = '';
+  // Function to add a droplet
+  void _addDroplet() async {
+    setState(() {
+      droplets
+          .add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
+    });
+
+    print(droplets.length);
+
+
+    bool journalExists = await _checkJournalEntry(); // Await the check
+
+    if (!journalExists) {
+      await _fsService.addJournalEntry(droplets.length, 5, '');
+      print('Journal entry created and water added');
+    } else {
+      //If journal exists, update the mood
+      String? journalId = await _fsService
+          .getJournalIdByUserIdAndDate();
+
+      //adds water
+      _fsService.updateJournalWater(journalId!, droplets.length);
+    }
+  }
+
+    /////////////// MOOD ///////////////////
+
+    int _selectedMood = 5; // DEFAULT
+
+    Icon _buildIcon(int index) {
+      switch (index) {
+        case 0:
+          return Icon(Icons.sentiment_very_dissatisfied); // Lowest rating
+        case 1:
+          return Icon(Icons.sentiment_dissatisfied); // Moderate-low rating
+        case 2:
+          return Icon(Icons.sentiment_neutral); // Neutral rating
+        case 3:
+          return Icon(Icons.sentiment_satisfied); // Moderate-high rating
+        case 4:
+          return Icon(Icons.sentiment_very_satisfied); // Highest rating
+        default:
+          return Icon(Icons.star_border); // Default icon
+      }
+    }
+
+    Icon _moodToDisplay(int index) {
+      return Icon(
+        _buildIcon(index).icon,
+        size: 70,
+      );
+    }
+
+    bool showToDoPage = false;
+
+    final PageController _pageController = PageController(initialPage: 0);
+
+
+    /*BUDGET STUFF*/
+
+    TextEditingController budgetController = TextEditingController();
+    CollectionReference spendings = FirebaseFirestore.instance.collection(
+        'spendings');
+    double amount = 0.0;
+    String description = '';
 
     Future<void> addSpending() async {
       String? journal = await _fsService.getJournalIdByUserIdAndDate();
@@ -230,9 +264,346 @@ class _HomePageState extends State<HomePage> {
       } catch (e) {
         print('Error adding spending: $e');
       }
-      }
+    }
 
 
+    Widget easyView() {
+      return SingleChildScrollView(
+        child: Column(children: [
+          Container(
+            // margin: EdgeInsets.only(top: 5),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: EdgeInsets.only(top: 5),
+                  padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+                  decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.black12, width: 1),
+                      )),
+                  child: Expanded(
+                    child: Row(
+                      children: [
+                        Icon(Icons.water_drop_outlined, size: 70),
+                        Container(
+                          //  padding: EdgeInsets.only(bottom: 10),
+                          margin: EdgeInsets.only(left: 10),
+                          width: 230,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text("Today's Water Intake"),
+                              SizedBox(height: 10),
+                              Row(children: droplets),
+                            ],
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.add),
+                          onPressed: _addDroplet,
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(top: 10),
+                  padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+                  decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.black12, width: 1),
+                      )),
+                  child: Row(
+                    children: [
+                      _moodToDisplay(_selectedMood),
+                      Container(
+                        //  padding: EdgeInsets.only(bottom: 10),
+                        margin: EdgeInsets.only(left: 10),
+                        width: 250,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Today's Mood"),
+                            SizedBox(height: 10),
+                            Row(
+                              children: List.generate(5, (index) {
+                                return IconButton(
+                                  icon: _buildIcon(index),
+                                  onPressed: () async { // add mood to journal entry of the day
+
+
+                                    //If journal doesnt exist, make an entry
+                                    bool journalExists = await _checkJournalEntry(); // Await the check
+
+                                    if (!journalExists) {
+                                      await _fsService.addJournalEntry(
+                                          0, index, '');
+                                      print(
+                                          'Journal entry created and mood added');
+                                    } else {
+                                      //If journal exists, update the mood
+                                      String? journalId = await _fsService
+                                          .getJournalIdByUserIdAndDate();
+
+                                      //update mood
+                                      _fsService.updateJournalMood(
+                                          journalId!, index);
+                                    }
+
+                                    setState(() {
+                                      _selectedMood = index;
+                                    });
+                                  },
+                                  color: _selectedMood == index
+                                      ? Colors.deepPurple
+                                      : null,
+                                );
+                              }),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  margin: EdgeInsets.only(top: 5),
+                  padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
+                  decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(color: Colors.black12, width: 1),
+                      )),
+                  child: Row(
+                    children: [
+                      Icon(Icons.attach_money, size: 70),
+                      Container(
+                        //  padding: EdgeInsets.only(bottom: 10),
+                        margin: EdgeInsets.only(left: 10),
+                        width: 230,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text("Budget"),
+                            SizedBox(height: 10),
+                            Row(children: [
+                              Text("Balance: \$"),
+                              Expanded(
+                                  child: TextField(
+                                    controller: budgetController,
+                                    onChanged: (value) =>
+                                    amount = double.tryParse(value) ?? 0.0,
+                                    keyboardType: TextInputType.number,
+                                  ))
+                            ]),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(Icons.add),
+                        onPressed: addSpending,
+                      ),
+                    ],
+                  ),
+                ),
+                Container(
+                  // PAGE INDICATORSS
+                  padding: const EdgeInsets.all(8.0),
+                  margin: EdgeInsets.only(top: 5),
+
+                  child: Row(
+                    //mainAxisSize: MainAxisSize.min,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Filled circle
+                      Container(
+                        width: 12,
+                        height: 10,
+                        decoration: const BoxDecoration(
+                          color: Colors.black, // Filled circle color
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      // Unfilled circle
+                      Container(
+                        width: 12,
+                        height: 10,
+                        decoration: BoxDecoration(
+                          color: Colors.grey,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ]),
+      );
+    }
+
+    Widget toDoList() {
+      // Shows the to-do items
+      return Column(
+        children: List.generate(
+          tasks.length,
+              (index) {
+            return Container(
+              decoration: const BoxDecoration(
+                border: Border(
+                  bottom: BorderSide(
+                    color: Colors.black12, // Border color
+                    width: 1.0, // Border width
+                  ),
+                ),
+              ),
+              child: ListTile(
+                leading: Checkbox(
+                  value: tasks[index]['completed'],
+                  onChanged: (bool? value) {
+                    _toggleTaskCompletion(index);
+                  },
+                ),
+                title: Text(
+                  tasks[index]['task'],
+                  style: TextStyle(
+                    decoration: tasks[index]['completed']
+                        ? TextDecoration.lineThrough
+                        : TextDecoration.none,
+                  ),
+                ),
+              ),
+            );
+          },
+        ),
+      );
+    }
+
+    Widget ToDoView() {
+      return SingleChildScrollView(
+        child: Container(
+          // TO DO CONTAINER
+          height: 330,
+          margin: EdgeInsets.only(top: 10),
+          //padding: const EdgeInsets.all(10),
+          // decoration: BoxDecoration(
+          //  // color: Colors.green,
+          //   borderRadius: BorderRadius.circular(10),
+          //   border: Border.all(color: Colors.black12),
+          // ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                alignment: Alignment.centerLeft,
+                decoration: const BoxDecoration(
+                  border: Border(
+                    bottom: BorderSide(color: Colors.black12, width: 0.5),
+                  ),
+                ),
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Row(
+                  children: [
+                    Text(
+                      'To Do',
+                      style: TextStyle(
+                          fontSize: 20, fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(
+                      width: 260,
+                    ),
+                    GestureDetector(
+                      onTap: () {
+                        //CHANGE - NAVIGATE TO TO DO VIEW
+                        print("View To Do !");
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => ToDoPage()),
+                        );
+                      },
+                      child: Text(
+                        'View',
+                        style: TextStyle(fontSize: 17, color: Colors.black54),
+                      ),
+                    )
+                  ],
+                ),
+              ),
+              Container(
+                // color: Colors.lightBlueAccent,
+                height: 190,
+                margin: EdgeInsets.only(bottom: 10),
+                // decoration: BoxDecoration(
+                //   //     color: Colors.lightBlueAccent,
+                //   borderRadius: BorderRadius.circular(10),
+                //   border: Border.all(color: Colors.black12),
+                // ),
+                child: SingleChildScrollView(
+                  child: toDoList(),
+                ),
+              ),
+              Expanded(
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: taskController,
+                        decoration: InputDecoration(
+                          hintText: "Enter a new task",
+                          contentPadding: EdgeInsets.symmetric(
+                              vertical: 0, horizontal: 15), // Controls height
+
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(
+                                30), // Rounded corners for enabled state
+                          ),
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      onPressed: addTask,
+                      icon: const Icon(Icons.add),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                // PAGE INDICATORSS
+                padding: const EdgeInsets.all(8.0),
+
+                child: Row(
+                  //mainAxisSize: MainAxisSize.min,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Filled circle
+                    Container(
+                      width: 12,
+                      height: 10,
+                      decoration: const BoxDecoration(
+                        color: Colors.grey, // Filled circle color
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    // Unfilled circle
+                    Container(
+                      width: 12,
+                      height: 10,
+                      decoration: BoxDecoration(
+                        color: Colors.black,
+                        shape: BoxShape.circle,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
   @override
   Widget build(BuildContext context) {
@@ -244,7 +615,7 @@ class _HomePageState extends State<HomePage> {
             child: SingleChildScrollView(
               child: Container(
                 margin:
-                    const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
                 child: Column(
                   children: [
                     Container(
@@ -268,9 +639,9 @@ class _HomePageState extends State<HomePage> {
                         calendarBuilders: CalendarBuilders(
                           headerTitleBuilder: (context, date) {
                             String dayPart =
-                                DateFormat('EEE, MMM d').format(today);
+                            DateFormat('EEE, MMM d').format(today);
                             String monthYearPart =
-                                DateFormat('MMM yyyy').format(date);
+                            DateFormat('MMM yyyy').format(date);
                             return Padding(
                               padding: const EdgeInsets.only(bottom: 1),
                               child: Row(
@@ -289,7 +660,8 @@ class _HomePageState extends State<HomePage> {
                                   Container(
                                     width: 90,
                                     child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      mainAxisAlignment: MainAxisAlignment
+                                          .end,
                                       children: [
                                         Text(
                                           monthYearPart,
@@ -342,339 +714,5 @@ class _HomePageState extends State<HomePage> {
       ),
     );
   }
-
-  Widget easyView() {
-    return SingleChildScrollView(
-      child: Column(children: [
-        Container(
-          // margin: EdgeInsets.only(top: 5),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                margin: EdgeInsets.only(top: 5),
-                padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
-                decoration: BoxDecoration(
-                    border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                )),
-                child: Expanded(
-                  child: Row(
-                    children: [
-                      Icon(Icons.water_drop_outlined, size: 70),
-                      Container(
-                        //  padding: EdgeInsets.only(bottom: 10),
-                        margin: EdgeInsets.only(left: 10),
-                        width: 230,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Today's Water Intake"),
-                            SizedBox(height: 10),
-                            Row(children: droplets),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: Icon(Icons.add),
-                        onPressed: _addDroplet,
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.only(top: 10),
-                padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
-                decoration: BoxDecoration(
-                    border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                )),
-                child: Row(
-                  children: [
-                    _moodToDisplay(_selectedMood),
-                    Container(
-                      //  padding: EdgeInsets.only(bottom: 10),
-                      margin: EdgeInsets.only(left: 10),
-                      width: 250,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Today's Mood"),
-                          SizedBox(height: 10),
-                          Row(
-                            children: List.generate(5, (index) {
-                              return IconButton(
-                                icon: _buildIcon(index),
-                                onPressed: () async {  // add mood to journal entry of the day
-
-
-                                  //If journal doesnt exist, make an entry
-                                  bool journalExists = await _checkJournalEntry();  // Await the check
-
-                                  if (!journalExists) {
-                                    await _fsService.addJournalEntry(index, '', );
-                                    print('Journal entry created and mood added');
-                                  } else {
-                                    //If journal exists, update the mood
-                                    String? journalId = await _fsService
-                                        .getJournalIdByUserIdAndDate();
-
-                                    //update mood
-                                    _fsService.updateJournalMood(
-                                        journalId!, index);
-                                  }
-
-                                  setState(() {
-                                    _selectedMood = index;
-                                  });
-                                },
-                                color: _selectedMood == index
-                                    ? Colors.deepPurple
-                                    : null,
-                              );
-                            }),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                margin: EdgeInsets.only(top: 5),
-                padding: EdgeInsets.only(top: 5, bottom: 15, left: 5),
-                decoration: BoxDecoration(
-                    border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 1),
-                )),
-                child: Row(
-                  children: [
-                    Icon(Icons.attach_money, size: 70),
-                    Container(
-                      //  padding: EdgeInsets.only(bottom: 10),
-                      margin: EdgeInsets.only(left: 10),
-                      width: 230,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text("Budget"),
-                          SizedBox(height: 10),
-                          Row(children: [
-                            Text("Balance: \$"),
-                            Expanded(
-                                child: TextField(
-                              controller: budgetController,
-                              onChanged: (value) =>
-                                  amount = double.tryParse(value) ?? 0.0,
-                              keyboardType: TextInputType.number,
-                            ))
-                          ]),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: addSpending,
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                // PAGE INDICATORSS
-                padding: const EdgeInsets.all(8.0),
-                margin: EdgeInsets.only(top: 5),
-
-                child: Row(
-                  //mainAxisSize: MainAxisSize.min,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Filled circle
-                    Container(
-                      width: 12,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: Colors.black, // Filled circle color
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    // Unfilled circle
-                    Container(
-                      width: 12,
-                      height: 10,
-                      decoration: BoxDecoration(
-                        color: Colors.grey,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ]),
-    );
-  }
-
-  Widget ToDoView() {
-    return SingleChildScrollView(
-      child: Container(
-        // TO DO CONTAINER
-        height: 330,
-        margin: EdgeInsets.only(top: 10),
-        //padding: const EdgeInsets.all(10),
-        // decoration: BoxDecoration(
-        //  // color: Colors.green,
-        //   borderRadius: BorderRadius.circular(10),
-        //   border: Border.all(color: Colors.black12),
-        // ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              alignment: Alignment.centerLeft,
-              decoration: const BoxDecoration(
-                border: Border(
-                  bottom: BorderSide(color: Colors.black12, width: 0.5),
-                ),
-              ),
-              padding: const EdgeInsets.only(bottom: 8),
-              child: Row(
-                children: [
-                  Text(
-                    'To Do',
-                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                  ),
-                  SizedBox(
-                    width: 260,
-                  ),
-                  GestureDetector(
-                    onTap: () {
-                      //CHANGE - NAVIGATE TO TO DO VIEW
-                      print("View To Do !");
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => ToDoPage()),
-                      );
-                    },
-                    child: Text(
-                      'View',
-                      style: TextStyle(fontSize: 17, color: Colors.black54),
-                    ),
-                  )
-                ],
-              ),
-            ),
-            Container(
-              // color: Colors.lightBlueAccent,
-              height: 190,
-              margin: EdgeInsets.only(bottom: 10),
-              // decoration: BoxDecoration(
-              //   //     color: Colors.lightBlueAccent,
-              //   borderRadius: BorderRadius.circular(10),
-              //   border: Border.all(color: Colors.black12),
-              // ),
-              child: SingleChildScrollView(
-                child: toDoList(),
-              ),
-            ),
-            Expanded(
-              child: Row(
-                children: [
-                  Expanded(
-                    child: TextField(
-                      controller: taskController,
-                      decoration: InputDecoration(
-                        hintText: "Enter a new task",
-                        contentPadding: EdgeInsets.symmetric(
-                            vertical: 0, horizontal: 15), // Controls height
-
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(
-                              30), // Rounded corners for enabled state
-                        ),
-                      ),
-                    ),
-                  ),
-                  IconButton(
-                    onPressed: addTask,
-                    icon: const Icon(Icons.add),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              // PAGE INDICATORSS
-              padding: const EdgeInsets.all(8.0),
-
-              child: Row(
-                //mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  // Filled circle
-                  Container(
-                    width: 12,
-                    height: 10,
-                    decoration: const BoxDecoration(
-                      color: Colors.grey, // Filled circle color
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Unfilled circle
-                  Container(
-                    width: 12,
-                    height: 10,
-                    decoration: BoxDecoration(
-                      color: Colors.black,
-                      shape: BoxShape.circle,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget toDoList() {
-    // Shows the to-do items
-    return Column(
-      children: List.generate(
-        tasks.length,
-        (index) {
-          return Container(
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color: Colors.black12, // Border color
-                  width: 1.0, // Border width
-                ),
-              ),
-            ),
-            child: ListTile(
-              leading: Checkbox(
-                value: tasks[index]['completed'],
-                onChanged: (bool? value) {
-                  _toggleTaskCompletion(index);
-                },
-              ),
-              title: Text(
-                tasks[index]['task'],
-                style: TextStyle(
-                  decoration: tasks[index]['completed']
-                      ? TextDecoration.lineThrough
-                      : TextDecoration.none,
-                ),
-              ),
-            ),
-          );
-        },
-      ),
-    );
-  }
 }
+
