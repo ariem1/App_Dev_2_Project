@@ -40,6 +40,10 @@ dependencies:
   image_picker: any
   firebase_storage: any
   fl_chart: any
+  google_maps_flutter: ^2.10.0
+  geolocator: ^10.1.0
+  google_maps_webservice: ^0.0.19
+  geocoding: ^2.1.0
 
 
 
