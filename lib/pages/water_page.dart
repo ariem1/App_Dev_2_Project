@@ -9,18 +9,56 @@ class WaterPage extends StatefulWidget {
 }
 
 class _WaterPageState extends State<WaterPage> {
-  double fillPercentage = 0.0;
+  double fillPercentage = 1.0; // means full cup
+  int counter = 0; // Counter for how many times the cup has been emptied
 
   void increaseFill() {
     setState(() {
-      // Increment fill by 1/4 each time, up to full **TO BE CHANGED***
-      fillPercentage = (fillPercentage + 0.25).clamp(0.0, 1.0);
+      fillPercentage = (fillPercentage + 0.125).clamp(0.0, 1.0); //clamp restricts a value to certain range so that water no overflow
     });
   }
 
   void decreaseFill() {
     setState(() {
-      fillPercentage = (fillPercentage - 0.25).clamp(0.0, 1.0);
+      fillPercentage = (fillPercentage - 0.125).clamp(0.0, 1.0);
+      if (fillPercentage == 0.0 && counter < 8) {
+        counter++;
+        if (counter < 8) {
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text("Good Job!"),
+              content: Text("You drank $counter/8 cups of water!"),
+              actions: [
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    setState(() {
+                      fillPercentage = 1.0; // refills the cup
+                    });
+                  },
+                  child: Text("OK"),
+                ),
+              ],
+            ),
+          );
+        } else {
+          // This will not make the water fill up if you already drank 8 cups
+          showDialog(
+            context: context,
+            builder: (context) => AlertDialog(
+              title: Text("Congratulations!"),
+              content: Text("You completed 8/8 cups of water for the day!"),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: Text("OK"),
+                ),
+              ],
+            ),
+          );
+        }
+      }
     });
   }
 
@@ -29,15 +67,20 @@ class _WaterPageState extends State<WaterPage> {
     return Scaffold(
       appBar: AppBar(
         title: Text("Water Tracker"),
+        centerTitle: true,
       ),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
+            Text(
+              "Cups Drank: $counter/8",
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+            ),
+            SizedBox(height: 20),
             Stack(
               alignment: Alignment.bottomCenter,
               children: [
-                // Water fill background
                 ClipRect(
                   child: Align(
                     alignment: Alignment.bottomCenter,
@@ -50,7 +93,7 @@ class _WaterPageState extends State<WaterPage> {
                   ),
                 ),
                 Image.asset(
-                  'assets/cup.png',
+                  'assets/emptycup.png',
                   width: 250,
                   height: 300,
                   fit: BoxFit.fill,
@@ -58,13 +101,19 @@ class _WaterPageState extends State<WaterPage> {
               ],
             ),
             SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: increaseFill,
-              child: Text("Fill Cup"),
-            ),
-            ElevatedButton(
-              onPressed: decreaseFill,
-              child: Text("Decrease Cup"),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ElevatedButton(
+                  onPressed: counter >= 8 ? null : increaseFill, // Disable if counter is 8 or more
+                  child: Text("Fill Cup"),
+                ),
+                SizedBox(width: 20),
+                ElevatedButton(
+                  onPressed: decreaseFill,
+                  child: Text("Drink Water"),
+                ),
+              ],
             ),
           ],
         ),

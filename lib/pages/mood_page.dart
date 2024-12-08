@@ -3,6 +3,8 @@ import 'package:intl/intl.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:aura_journal/firestore_service.dart';
 import 'package:fl_chart/fl_chart.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 
 class MoodPage extends StatefulWidget {
   const MoodPage({super.key});
@@ -111,81 +113,113 @@ class _MoodPageState extends State<MoodPage> {
         }
 
         Map<int, int> moodCounts = snapshot.data!;
-        return Column(
-          children: [
-            Text(
-              'Moods for ${months[month - 1]} $currentYear',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold,color: Color(0xFF83C2D9) ),
-            ),
-            SizedBox(height: 20),
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.all(50.0), // Add padding to center the graph
-                child: BarChart(
-                    BarChartData(
-                      alignment: BarChartAlignment.spaceAround,
-                      barGroups: moodCounts.entries.map((entry) {
-                        return BarChartGroupData(
-                          x: entry.key,
-                          barRods: [
-                            BarChartRodData(
-                              toY: entry.value.toDouble(),
-                              color: Color(0xFF83C2D9),
-                              width: 40,
-                              borderRadius: BorderRadius.circular(4),
+
+        // Calculate the most frequent mood
+        int mostFrequentMood = moodCounts.entries.reduce((a, b) => a.value > b.value ? a : b).key;
+
+        // Fetch a quote for the most frequent mood
+        return FutureBuilder<String>(
+          future: fetchMoodQuote(_getMoodName(mostFrequentMood)), // Fetch quote
+          builder: (context, quoteSnapshot) {
+            return Column(
+              children: [
+                Text(
+                  'Moods for ${months[month - 1]} $currentYear',
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF83C2D9)),
+                ),
+                if (quoteSnapshot.connectionState == ConnectionState.waiting)
+                  CircularProgressIndicator()
+                else if (quoteSnapshot.hasError)
+                  Text("Failed to fetch quote.")
+                else
+                  Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Text(
+                      quoteSnapshot.data ?? "No quote available.",
+                      style: TextStyle(fontSize: 16, fontStyle: FontStyle.italic, color: Colors.black54),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                SizedBox(height: 20),
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(50.0),
+                    child: BarChart(
+                      BarChartData(
+                        alignment: BarChartAlignment.spaceAround,
+                        barGroups: moodCounts.entries.map((entry) {
+                          return BarChartGroupData(
+                            x: entry.key,
+                            barRods: [
+                              BarChartRodData(
+                                toY: entry.value.toDouble(),
+                                color: Color(0xFF83C2D9),
+                                width: 40,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                            ],
+                            showingTooltipIndicators: [0],
+                          );
+                        }).toList(),
+                        maxY: daysInMonth.toDouble(),
+                        titlesData: FlTitlesData(
+                          leftTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          bottomTitles: AxisTitles(
+                            sideTitles: SideTitles(
+                              showTitles: true,
+                              reservedSize: 60,
+                              getTitlesWidget: (value, meta) {
+                                return Padding(
+                                  padding: EdgeInsets.all(10.0),
+                                  child: _buildIcon(value.toInt()),
+                                );
+                              },
                             ),
-                          ],
-                          showingTooltipIndicators: [0], // Enable tooltips if necessary
-                        );
-                      }).toList(),
-                      maxY: daysInMonth.toDouble(),
-                      titlesData: FlTitlesData(
-                        leftTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false), // Hide left Y-axis
+                          ),
+                          rightTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
+                          topTitles: AxisTitles(
+                            sideTitles: SideTitles(showTitles: false),
+                          ),
                         ),
-                        bottomTitles: AxisTitles(
-                          sideTitles: SideTitles(
-                            showTitles: true,
-                            reservedSize: 60,
-                            getTitlesWidget: (value, meta) {
-                             return Padding(padding: EdgeInsets.all(10.0),
-                               child:_buildIcon(value.toInt()));
+                        barTouchData: BarTouchData(
+                          touchTooltipData: BarTouchTooltipData(
+                            tooltipHorizontalAlignment: FLHorizontalAlignment.center,
+                            getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                              return BarTooltipItem(
+                                rod.toY.toInt().toString(),
+                                TextStyle(
+                                  color: Color(0xFF83C2D9),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              );
                             },
                           ),
                         ),
-                        rightTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
-                        topTitles: AxisTitles(
-                          sideTitles: SideTitles(showTitles: false),
-                        ),
+                        gridData: FlGridData(show: false), // Remove gridlines
+                        borderData: FlBorderData(show: false), // Remove borders
                       ),
-
-                      barTouchData: BarTouchData(
-                        touchTooltipData: BarTouchTooltipData(
-                          tooltipHorizontalAlignment: FLHorizontalAlignment.center,
-                          getTooltipItem: (group, groupIndex, rod, rodIndex) {
-                            return BarTooltipItem(
-                              rod.toY.toInt().toString(),
-                              TextStyle(
-                                color: Color(0xFF83C2D9),
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-                      gridData: FlGridData(show: false), // Remove gridlines
-                      borderData: FlBorderData(show: false), // Remove borders
-                    )
+                    ),
+                  ),
                 ),
-              ),
-            ),
-          ],
+              ],
+            );
+          },
         );
       },
     );
   }
+
+  String _getMoodName(int moodIndex) {
+    const moodNames = [
+      "anger", "sad", "neutral", "happy", "joyful"
+    ]; // Adjust to match your moods
+    return moodIndex >= 0 && moodIndex < moodNames.length ? moodNames[moodIndex] : "neutral";
+  }
+
   Future<Map<int, int>> _getMonthlyMoodCounts(int year, int month) async {
     Map<int, int> moodCounts = {0: 0, 1: 0, 2: 0, 3: 0, 4: 0};
 
@@ -205,8 +239,6 @@ class _MoodPageState extends State<MoodPage> {
     }
     return moodCounts;
   }
-
-
 
   Widget monthlyView() {
     return GridView.count(
@@ -307,6 +339,27 @@ class _MoodPageState extends State<MoodPage> {
   Widget initialView() {
     return emotionView(DateTime.now().month);
   }
+
+  //Code for fetch quote api
+  Future<String>fetchMoodQuote(String mood) async{
+    const String baseUrl = "https://mood-based-quote-api.p.rapidapi.com/";
+    const Map<String, String> headers = {
+      "X-RapidAPI-Key": "83586a7b1amshbd3b1190668f113peff0bjsn09a2cc3b7c60", // Replace with your actual API key
+      "X-RapidAPI-Host": "mood-based-quote-api.p.rapidapi.com"
+    };
+
+    final String url = "$baseUrl$mood";
+
+    final response = await http.get(Uri.parse(url), headers: headers);
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['quote'] ?? "No quote found.";
+    } else {
+      throw Exception("Failed to fetch quote: ${response.reasonPhrase}");
+    }
+  }
+
 
   @override
   Widget build(BuildContext context) {
