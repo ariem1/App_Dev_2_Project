@@ -8,11 +8,14 @@ import 'dart:io';
 class JournalPage extends StatefulWidget {
   final void Function(Color) onColorUpdate;
   final DateTime selectedDate;
+  final String? currentUserId;
 
   const JournalPage({
     super.key,
     required this.selectedDate,
     required this.onColorUpdate,
+    required this.currentUserId,
+
   });
 
   @override
@@ -22,6 +25,10 @@ class JournalPage extends StatefulWidget {
 class _JournalPageState extends State<JournalPage> {
   final FirestoreService _fsService = FirestoreService();
   bool isEditing = false;
+  DateTime now = DateTime.now().toUtc();
+  late String formattedNow;
+  late String formattedSelectDate;
+
 
   // Controllers
   final TextEditingController _journalTitleController = TextEditingController();
@@ -62,9 +69,9 @@ class _JournalPageState extends State<JournalPage> {
 
   // Fetch and display journal data
   Future<void> _fetchJournalData() async {
+    print('Journal: fetching');
     final data =
-        await _fsService.fetchJournalDataByDateAndUser(widget.selectedDate);
-
+        await _fsService.fetchJournalDataByDateAndUser(widget.selectedDate, widget.currentUserId);
     if (data.isNotEmpty) {
       setState(() {
         _journalTitleController.text = data['title'] ?? '';
@@ -87,7 +94,7 @@ class _JournalPageState extends State<JournalPage> {
     final title = _journalTitleController.text;
     final desc = _journalDescController.text;
 
-    await _fsService.updateJournalEntry(content, desc, title);
+    await _fsService.updateJournalEntry(content, desc, title, widget.currentUserId);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Journal entry saved!')),
     );
@@ -108,10 +115,13 @@ class _JournalPageState extends State<JournalPage> {
       if (pickedFile != null) {
         // Step 2: Convert to File and set the state
         print('Image selected: ${pickedFile.path}');
-        setState(() {
+        setState(() async {
           _image = File(pickedFile.path);
+
+
         });
         print('step 2');
+
 
         // Step 3: Upload the image to Firebasse Storage
         String? downloadURL = await _fsService.uploadImageToFirebase(_image!);
@@ -188,6 +198,12 @@ class _JournalPageState extends State<JournalPage> {
   void initState() {
     super.initState();
     _fetchJournalData();
+    print(widget.selectedDate);
+
+    formattedNow = DateFormat('yyyy-MM-dd').format(now);
+    formattedSelectDate = DateFormat('yyyy-MM-dd').format(widget.selectedDate);
+
+
   }
 
   @override
@@ -205,20 +221,23 @@ class _JournalPageState extends State<JournalPage> {
       appBar: AppBar(
         title: Text('Journal Entry'),
         actions: [
-          IconButton(
-            icon: Icon(isEditing ? Icons.check : Icons.edit),
-            onPressed: isEditing
-                ? _saveJournalData
-                : () {
-                    setState(() {
-                      isEditing = true;
-                    });
-                  },
-          ),
+
+          if (formattedSelectDate == formattedNow)
+            IconButton(
+              icon: Icon(isEditing ? Icons.check : Icons.edit),
+              onPressed: isEditing
+                  ? _saveJournalData
+                  : () {
+                setState(() {
+                  isEditing = true;
+                });
+              },
+            ),
+
         ],
       ),
       body: FutureBuilder<Map<String, dynamic>>(
-        future: _fsService.fetchJournalDataByDateAndUser(widget.selectedDate),
+        future: _fsService.fetchJournalDataByDateAndUser(widget.selectedDate, widget.currentUserId),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());

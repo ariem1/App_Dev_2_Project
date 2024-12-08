@@ -33,7 +33,7 @@ class _MainPageState extends State<MainPage> {
 
     // Initialize pages inside initState to access widget properties
     pages.addAll([
-      HomePage(onColorUpdate: widget.onColorUpdate),
+      HomePage(onColorUpdate: widget.onColorUpdate, controller: controller,),
       const MoodPage(),
       const BudgetPage(),
       const WaterPage(),

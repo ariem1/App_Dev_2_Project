@@ -90,9 +90,8 @@ class FirestoreService {
   }
 
   // Method to check if a journal entry exists for today
-  Future<bool> journalEntryExistsForToday() async {
+  Future<bool> journalEntryExistsForToday(String currentUserId) async {
     try {
-      //   String? userId = getCurrentUserId();
 
       // Get the current date
       DateTime now = DateTime.now();
@@ -101,16 +100,14 @@ class FirestoreService {
       DateTime endOfDay = DateTime(
           now.year, now.month, now.day, 23, 59, 59, 999); // End of today
 
-      // Query Firestore to check if an entry exists for today
       QuerySnapshot snapshot = await _db
           .collection('journals')
-          .where('userId', isEqualTo: _userId)
+          .where('userId', isEqualTo: currentUserId)
           .where('entryDate',
               isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('entryDate', isLessThanOrEqualTo: Timestamp.fromDate(endOfDay))
           .get();
 
-      // If documents are found, return true (entry exists)
       return snapshot.docs.isNotEmpty;
     } catch (e) {
       print('Error checking journal entry for today: $e');
@@ -123,9 +120,10 @@ class FirestoreService {
       int water,
       int mood,
     String content,
+      String userId,
   ) async {
     try {
-      String? userId = getCurrentUserId();
+     // String? userId = getCurrentUserId();
 
       // Add a new journal entry
       DocumentReference journal = await _db.collection('journals').add({
@@ -160,12 +158,12 @@ class FirestoreService {
   }
 
   // Update a journal - entry
-  Future<void> updateJournalEntry(String entry, String desc, String title) async {
+  Future<void> updateJournalEntry(String entry, String desc, String title, String? currentUserId) async {
     try {
-      String? userId = getCurrentUserId();
 
-      String? journalId = await getJournalIdByUserIdAndDate();
+      String? journalId = await getJournalIdByUserIdAndDate_2(currentUserId!);
 
+      print('Journal id: $journalId');
       // Update the mood of the day's journal entry
       await _db.collection('journals').doc(journalId).update({
         'content': entry,
@@ -179,39 +177,49 @@ class FirestoreService {
     }
   }
 
-  //Fetches the data of a journal
-  Future<Map<String, dynamic>> fetchJournalData() async {
+  //Fetch Journal Data
+  Future<Map<String, dynamic>> fetchJournalData(String? userId) async {
     try {
-      String? userId = getCurrentUserId();
-      String? journalId = await getJournalIdByUserIdAndDate();
-
-      if (journalId == null) {
-        print('No journal found for the user today.');
-        return {}; // Return an empty map if no journal is found
-      }
-
-      print('Fetching journal entry for ID: $journalId');
-      var snapshot = await FirebaseFirestore.instance
-          .collection('journals')
-          .doc(journalId)
-          .get();
-
-      if (!snapshot.exists) {
-        print('No journal found for today');
+      if (userId == null) {
+        print('Error: User ID is null.');
         return {};
       }
 
-      // Return all relevant fields in a map
+      DateTime now = DateTime.now();
+      DateTime startOfDay = DateTime(now.year, now.month, now.day);
+      DateTime endOfDay =
+      startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
+
+      // Convert to Firestore Timestamps
+      Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
+      Timestamp endTimestamp = Timestamp.fromDate(endOfDay);
+
+      // Query the journals collection for today's entries for the user
+      QuerySnapshot snapshot = await FirebaseFirestore.instance
+          .collection('journals')
+          .where('userId', isEqualTo: userId)
+          .where('entryDate', isGreaterThanOrEqualTo: startTimestamp)
+          .where('entryDate', isLessThanOrEqualTo: endTimestamp)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print('No journal entry found for this user on this date');
+        return {};
+      }
+
+      // Assuming only one entry per day, fetch the first document
+      var document = snapshot.docs.first;
+
       return {
-        'title': snapshot.get('title') ?? '',
-        'description': snapshot.get('description') ?? '',
-        'content': snapshot.get('content') ?? '',
-        'mood': snapshot.get('mood') ?? '',
-        'entryDate': snapshot.get('entryDate') ?? '',
-        'water': snapshot.get('water') ?? 0,
-        'imagePath':  snapshot.get('imagePath') ?? '',
-
-
+        'journalId': document.id, // Document ID as journalId
+        'title': document.get('title') ?? '',
+        'description': document.get('description') ?? '',
+        'content': document.get('content') ?? '',
+        'mood': document.get('mood') ?? -1,
+        'entryDate': document.get('entryDate') ?? '',
+        'water': document.get('water') ?? 0,
+        'imagePath': document.get('imagePath') ?? '',
+        'budget': document.get('budget') ?? 0,
 
       };
     } catch (e) {
@@ -220,31 +228,30 @@ class FirestoreService {
     }
   }
 
-  //Fetches the data of a journal
+
+  //Fetches the data of a journal by date -- for journal page
   Future<Map<String, dynamic>> fetchJournalDataByDateAndUser(
-      DateTime selectedDate) async {
+      DateTime selectedDate, String? userId) async {
     // Get start and end of the target day
     DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
-    String? userId = getCurrentUserId();
+    //String? userId = getCurrentUserId();
 
     print('Journal: for $userId');
 
 
     try {
-      // Query Firestore for a journal entry with the userId and within the date range
       var querySnapshot = await FirebaseFirestore.instance
           .collection('journals')
-          .where('userId', isEqualTo: userId) // Filter by userId
-          .where('entryDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay)) // Start of day
-          .where('entryDate', isLessThan: Timestamp.fromDate(endOfDay)) // End of day
+          .where('userId', isEqualTo: userId)
+          .where('entryDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('entryDate', isLessThan: Timestamp.fromDate(endOfDay))
           .get();
 
-      // Check if any documents match the query
-      if (querySnapshot.docs.isEmpty) {
-        print('No journal entry found for the provided user and date.');
-        return {};
-      }
+      var querySnapshotImage = await FirebaseFirestore.instance
+          .collection('images')
+          .where('userId', isEqualTo: userId)
+          .get();
 
       // Assuming only one journal entry per user per day, fetch the first result
       var document = querySnapshot.docs.first;
@@ -316,9 +323,8 @@ class FirestoreService {
   }
 
   // Returns the Journal Id for the day
-  Future<String?> getJournalIdByUserIdAndDate() async {
+  Future<String?> getJournalIdByUserIdAndDate(String currentUserId) async {
     try {
-      // Get the start and end of the day (midnight to 11:59 PM) for the query
       DateTime now = DateTime.now();
       DateTime startOfDay =
           DateTime(now.year, now.month, now.day); // Midnight of today
@@ -332,7 +338,7 @@ class FirestoreService {
       // Query the Firestore collection
       QuerySnapshot snapshot = await _db
           .collection('journals')
-          .where('userId', isEqualTo: _userId)
+          .where('userId', isEqualTo: currentUserId)
           .where('entryDate', isGreaterThanOrEqualTo: startTimestamp)
           .where('entryDate', isLessThanOrEqualTo: endTimestamp)
           .get();
@@ -343,6 +349,39 @@ class FirestoreService {
       }
 
       // Assuming only one journal entry for each user on a given day, return the first one
+      return snapshot.docs.first.id;
+    } catch (e) {
+      print("Error fetching journal entry: $e");
+      return null;
+    }
+  }
+
+  // Returns the Journal Id for the day
+  Future<String?> getJournalIdByUserIdAndDate_2(String currentUserId) async {
+    try {
+      DateTime now = DateTime.now();
+      DateTime startOfDay =
+      DateTime(now.year, now.month, now.day);
+      DateTime endOfDay =
+      startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
+
+      // Convert to Firestore's Timestamp
+      Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
+      Timestamp endTimestamp = Timestamp.fromDate(endOfDay);
+
+      // Query the Firestore collection
+      QuerySnapshot snapshot = await _db
+          .collection('journals')
+          .where('userId', isEqualTo: currentUserId)
+          .where('entryDate', isGreaterThanOrEqualTo: startTimestamp)
+          .where('entryDate', isLessThanOrEqualTo: endTimestamp)
+          .get();
+
+      if (snapshot.docs.isEmpty) {
+        print('No journal entry found for this user on this date');
+        return null;
+      }
+
       return snapshot.docs.first.id;
     } catch (e) {
       print("Error fetching journal entry: $e");
@@ -379,12 +418,12 @@ class FirestoreService {
       print('Imageee uploaded successfully. Path: images/$fileName');
 
       // Reference to the Firebase Storage location
-     Reference storageRef = FirebaseStorage.instance.ref().child('images/$fileName');
+     Reference storage = FirebaseStorage.instance.ref().child('images/$fileName');
 
 
 
       // Upload the image file
-  UploadTask uploadTask = storageRef.putFile(image);
+  UploadTask uploadTask = storage.putFile(image);
 
       // Wait for the upload to complete
       TaskSnapshot snapshot = await uploadTask;
@@ -411,6 +450,7 @@ class FirestoreService {
       await FirebaseFirestore.instance.collection('images').add({
         'url': imageURL,
         'uploadedAt': Timestamp.now(),
+        //'journalId':
       });
       print('Image URL saved to Firestore successfully.');
     } catch (e) {
@@ -419,8 +459,95 @@ class FirestoreService {
   }
 
 
+/////////// TASK //////////
 
+// Add a journal and return task -- done in the Home Page
+  Future<Map<String, dynamic>?> addtask(String userId, String task) async {
+    try {
+      // Add a new task entry
+      DocumentReference taskEntry = await _db.collection('tasks').add({
+        'userId': userId,
+        'entryDate': Timestamp.fromDate(DateTime.now()), // Store the current date
+        'done': false,
+        'dueDate': '',
+        'description': '',
+        'taskName': task,
+      });
 
+      // Get the document ID (taskId) from the DocumentReference
+      String taskId = taskEntry.id;
+
+      // Fetch the newly created document
+      DocumentSnapshot taskSnapshot = await taskEntry.get();
+
+      print('Task entry: $taskId');
+      return {
+        'taskId': taskId,
+        'userId': taskSnapshot.get('userId'),
+        'entryDate': taskSnapshot.get('entryDate'),
+        'done': taskSnapshot.get('done'),
+        'dueDate': taskSnapshot.get('dueDate'),
+        'description': taskSnapshot.get('description'),
+        'taskName': taskSnapshot.get('taskName'),
+      };
+    } catch (e) {
+      print('Error adding task: $e');
+      return null;
+    }
+  }
+
+  // Fetches all tasks for a specific user
+  Future<List<Map<String, dynamic>>> fetchAllTasksByUser(String userId) async {
+    try {
+      print('Fetching all tasks for user ID: $userId');
+
+      // Query the 'tasks' collection to get all tasks for the given user ID
+      var querySnapshot = await FirebaseFirestore.instance
+          .collection('tasks')
+          .where('userId', isEqualTo: userId)
+          .get();
+
+      // Check if there are any tasks
+      if (querySnapshot.docs.isEmpty) {
+        print('No tasks found for user ID: $userId');
+        return [];
+      }
+
+      // Map the documents to a list of maps
+      return querySnapshot.docs.map((doc) {
+        return {
+          'taskId': doc.id ?? '',
+          'userId': doc.get('userId') ?? '',
+          'entryDate': doc.get('entryDate') ?? '',
+          'done': doc.get('done') ?? false,
+          'dueDate': doc.get('dueDate') ?? '',
+          'description': doc.get('description') ?? '',
+          'taskName':  doc.get('taskName') ?? '',
+
+        };
+      }).toList();
+      print('Tasks fetched for userId: ${userId}');
+
+    } catch (e) {
+      print('Error fetching tasks: $e');
+      return [];
+    }
+  }
+
+  // Update task completion
+  Future<void> updateTaskCompletion(String taskId, bool done) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(taskId)
+          .update({'done': done});
+      print('Task $taskId updated to done: $done');
+    } catch (e) {
+      print('Error updating task: $e');
+    }
+  }
+
+  //////////////// BUDGET /////////
   //Create budget entry
   Future<String> createBudgetEntry(String journalId) async {
     try {

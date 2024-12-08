@@ -32,18 +32,6 @@ class MyApp extends StatefulWidget {
 }
 
 class _MyAppState extends State<MyApp> {
-//   CollectionReference users = FirebaseFirestore.instance.collection('Users');
-//   String name = 'emma';
-//   String password = 'solo';
-//
-//   Future<void> addUsers() async{
-//     if(name.isNotEmpty && password.isNotEmpty){
-//       await users.add({'name':name, 'password': password});
-//
-//       print('user added');
-//
-//     }
-// }
 
   Color _backgroundColor = const Color(0xFFE3EFF9);
 
