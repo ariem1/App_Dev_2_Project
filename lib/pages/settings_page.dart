@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:flutter_datetime_picker/flutter_datetime_picker.dart' hide DatePickerTheme; // Hide the conflicting import
+import 'package:timezone/data/latest_all.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 import 'package:aura_journal/firestore_service.dart';
 
 class SettingsPage extends StatefulWidget {
@@ -18,12 +22,14 @@ class SettingsPage extends StatefulWidget {
 }
 
 class _SettingsPageState extends State<SettingsPage> {
-
   final FirestoreService fsService = FirestoreService();
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
 
   late TextEditingController _journalNameController;
   String? _selectedColor;
   String? _selectedLanguage;
+  DateTime? _selectedDateTime;
 
   @override
   void initState() {
@@ -33,19 +39,57 @@ class _SettingsPageState extends State<SettingsPage> {
     _selectedLanguage = 'English';
 
     fetchJournalName();
+    _initializeNotifications();
   }
 
-  Color _getColorFromOption(String colorOption) {
-    if (colorOption == 'Option 2') {
-      return Colors.pink;
-    } else if (colorOption == 'Option 3') {
-      return Colors.purple;
+  Future<void> _initializeNotifications() async {
+    const AndroidInitializationSettings androidInitializationSettings =
+    AndroidInitializationSettings('@mipmap/ic_launcher');
+
+    const InitializationSettings initializationSettings =
+    InitializationSettings(android: androidInitializationSettings);
+
+    await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+    tz.initializeTimeZones(); // Initialize time zones
+  }
+
+  Future<void> _scheduleNotification() async {
+    if (_selectedDateTime == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a date and time')),
+      );
+      return;
     }
-    return const Color(0xFFE3EFF9); // Default blue color
+
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'journal_channel', // Channel ID
+      'Journal Reminders', // Channel name
+      channelDescription: 'Reminders to log your journal',
+      importance: Importance.high,
+      priority: Priority.high,
+    );
+
+    const NotificationDetails notificationDetails = NotificationDetails(
+      android: androidDetails,
+    );
+
+    await flutterLocalNotificationsPlugin.zonedSchedule(
+      0, // Notification ID
+      'Reminder', // Notification title
+      'Don’t forget to log your journal!', // Notification body
+      tz.TZDateTime.from(_selectedDateTime!, tz.local), // Time in local time zone
+      notificationDetails,
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, // Fixed parameter
+      uiLocalNotificationDateInterpretation:
+      UILocalNotificationDateInterpretation.absoluteTime,
+    );
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Notification scheduled successfully')),
+    );
   }
 
   Future<void> fetchJournalName() async {
-
     String? userId = fsService.getCurrentUser()?.uid;
 
     if (userId != null) {
@@ -55,7 +99,6 @@ class _SettingsPageState extends State<SettingsPage> {
       );
       setState(() {
         widget.onNameUpdated(docSnapshot.data()?['journalName']);
-        print('Settings: Journal Name updated in the app');
       });
     }
   }
@@ -116,31 +159,34 @@ class _SettingsPageState extends State<SettingsPage> {
                 ),
               ),
               const SizedBox(height: 20),
-              ElevatedButton(
-                onPressed: () async{
-
-                  String? userId = fsService.getCurrentUserId();
-
-                  // add the journal name to the db
-                  if( userId != null && _journalNameController.text.isNotEmpty) {
-                    await fsService.updateJournalName(_journalNameController.text);
-                    print('Settings: Journal name updates to ${_journalNameController.text}');
-
-                    fetchJournalName();
-
-                  } else{
-                    print('Please enter a journal name.');
-                  }
-
-                  widget.onColorUpdate(_getColorFromOption(_selectedColor!));
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Aura journal settings have been updated'),
-                      duration: Duration(seconds: 5),
-                    ),
+              TextButton(
+                onPressed: () {
+                  DatePicker.showDateTimePicker(
+                    context,
+                    showTitleActions: true,
+                    onChanged: (date) => setState(() {
+                      _selectedDateTime = date;
+                    }),
+                    onConfirm: (date) {
+                      setState(() {
+                        _selectedDateTime = date;
+                      });
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Selected Date: $date'),
+                        ),
+                      );
+                    },
                   );
                 },
-                child: const Text('Update'),
+                child: const Text(
+                  'Select Notification Time',
+                  style: TextStyle(color: Colors.blue),
+                ),
+              ),
+              ElevatedButton(
+                onPressed: _scheduleNotification,
+                child: const Text('Enable Notification'),
               ),
             ],
           ),
@@ -149,7 +195,6 @@ class _SettingsPageState extends State<SettingsPage> {
     );
   }
 
-  // Build radio buttons for options
   Widget _buildRadio(String value, String label, String? groupValue) {
     return Row(
       children: [
