@@ -524,12 +524,15 @@ class _HomePageState extends State<HomePage> {
                         onChanged: (value) =>
                             amount = double.tryParse(value) ?? 0.0,
                         keyboardType: TextInputType.number,
+
                       ),
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
                       onPressed: () async {
                         addSpending();
+                        FocusScope.of(context).unfocus();
+
                       },
                     ),
                   ],
@@ -599,12 +602,13 @@ class _HomePageState extends State<HomePage> {
                   Spacer(),
                   GestureDetector(
                     onTap: () {
-                      // Go to View page
+                      // Go to View/Detailed To Do page
                       Navigator.push(
                         context,
                         MaterialPageRoute(
                           builder: (context) => ToDoPage(
                             controller: widget.controller,
+                            currentUserId: currentUserId!,
                           ),
                         ),
                       );
@@ -663,9 +667,10 @@ class _HomePageState extends State<HomePage> {
                                           ),
                                         ),
                                       );
-                                      // Check if a task was deleted and refresh the home page
+
+                                      // Check if a task was deleted and refresh home page
                                       if (result == true) {
-                                        _getTasks(); //Reload tasks
+                                        _getTasks();
                                       }
                                     },
                                     style: TextButton.styleFrom(

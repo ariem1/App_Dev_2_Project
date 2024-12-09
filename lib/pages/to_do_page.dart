@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'nav_bar.dart'; // Import the BottomNavBar class
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import '../firestore_service.dart';
+import 'nav_bar.dart';
 
 class ToDoPage extends StatefulWidget {
   final PageController controller;
+  final String currentUserId;
 
-  const ToDoPage({super.key, required this.controller});
+  const ToDoPage(
+      {super.key, required this.controller, required this.currentUserId});
 
   @override
   State<ToDoPage> createState() => _ToDoPageState();
@@ -13,69 +18,132 @@ class ToDoPage extends StatefulWidget {
 class _ToDoPageState extends State<ToDoPage> {
 
 
-  // Example tasks for Today, Future, and Past sections
-  final todayTasks = [
-    {"title": "Label", "description": "Description"},
-    {"title": "Label", "description": "Description"},
-  ];
+  final FirestoreService _fsService = FirestoreService();
 
-  final futureTasks = [
-    {"title": "Future Task 1", "description": "Description"},
-  ];
+  Stream<QuerySnapshot> _fetchTasks() {
+    return FirebaseFirestore.instance.collection('tasks').snapshots();
+  }
 
-  final pastTasks = [
-    {"title": "Past Task 1", "description": "Description"},
-    {"title": "Past Task 2", "description": "Description"},
-  ];
+  //Catgorize tasks based on entry / due date
+  Map<String, List<DocumentSnapshot>> _categorizeTasks(
+      List<DocumentSnapshot> tasks) {
+    final todayTasks = <DocumentSnapshot>[];
+    final futureTasks = <DocumentSnapshot>[];
+    final pastTasks = <DocumentSnapshot>[];
 
-  // A helper method to build task cards
-  Widget _buildTaskCard(String title, String description) {
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 8, horizontal: 10),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: const [
-          BoxShadow(
-            color: Colors.black12,
-            blurRadius: 4,
-            offset: Offset(0, 2),
-          ),
-        ],
-        border: Border.all(
-          color: Colors.purpleAccent, // Purple border to match the screenshot
-          style: BorderStyle.solid,
-          width: 1,
-        ),
+    DateTime now = DateTime.now();
+
+    final taskByUserId =
+        tasks.where((task) => task['userId'] == widget.currentUserId).toList();
+
+    for (var task in taskByUserId) {
+      dynamic dueDateRaw = task['dueDate'];
+      dynamic entryDateRaw = task['entryDate'];
+      DateTime? dateToEvaluate;
+
+      try {
+        if (dueDateRaw is String && dueDateRaw.isNotEmpty) {
+          // If dueDate is a formatted string
+          dateToEvaluate = DateFormat('MMMM d, y').parse(dueDateRaw);
+        } else if (entryDateRaw is Timestamp) {
+          // If dueDate is null, use entryDate
+          dateToEvaluate = entryDateRaw.toDate();
+        } else {
+          continue;
+        }
+      } catch (e) {
+        print("Error parsing date: $dueDateRaw or $entryDateRaw - $e");
+        continue;
+      }
+
+      // Format date
+      String formattedDate = DateFormat('MMMM d, y').format(dateToEvaluate);
+
+      if (dateToEvaluate.year == now.year &&
+          dateToEvaluate.month == now.month &&
+          dateToEvaluate.day == now.day) {
+        //Add task to Today
+        todayTasks.add(task);
+
+        print(" today: $formattedDate");
+      } else if (dateToEvaluate.isBefore(now)) {
+        //Add task to Past
+        pastTasks.add(task);
+
+        print(" past Date: $formattedDate");
+      } else {
+        //Add task to Future
+        futureTasks.add(task);
+
+        print(" fut Date: $formattedDate");
+      }
+    }
+
+    return {
+      'today': todayTasks,
+      'future': futureTasks,
+      'past': pastTasks,
+    };
+  }
+
+  //Toggle task completion
+  void _toggleTaskComplete(String taskId, bool? isDone) {
+    if (isDone == null) return;
+
+    //Update task complete
+    _fsService.updateTaskCompletion(taskId, isDone);
+  }
+
+  Widget _taskSection(String title, List<DocumentSnapshot> tasks) {
+    return ExpansionTile(
+      initiallyExpanded: title == "Today",
+      title: Text(
+        title,
+        style: const TextStyle(
+            fontSize: 18, color: Colors.blueGrey, fontWeight: FontWeight.bold),
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Icon(Icons.check_box, color: Colors.black), // Checkbox icon
-          const SizedBox(width: 10),
-          Column(
+      children: tasks.map((task) {
+        return Container(
+          margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+          padding: const EdgeInsets.all(10),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.4),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              Checkbox(
+                value: task['done'] ?? false,
+                onChanged: (bool? value) {
+                  _toggleTaskComplete(task.id, value);
+                },
               ),
-              const SizedBox(height: 4),
-              Text(
-                description,
-                style: const TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey,
-                ),
+              const SizedBox(width: 15),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    task['taskName'] ?? 'No Title',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    task['description'] ?? 'No Description',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-        ],
-      ),
+        );
+      }).toList(),
     );
   }
 
@@ -85,37 +153,27 @@ class _ToDoPageState extends State<ToDoPage> {
       appBar: AppBar(
         title: const Text("To-Do List"),
       ),
-      body: ListView(
-        children: [
-          ExpansionTile(
-            initiallyExpanded: true,
-            title: const Text(
-              "Today",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            children: todayTasks
-                .map((task) => _buildTaskCard(task["title"]!, task["description"]!))
-                .toList(),
-          ),
-          ExpansionTile(
-            title: const Text(
-              "Future",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            children: futureTasks
-                .map((task) => _buildTaskCard(task["title"]!, task["description"]!))
-                .toList(),
-          ),
-          ExpansionTile(
-            title: const Text(
-              "Past",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            children: pastTasks
-                .map((task) => _buildTaskCard(task["title"]!, task["description"]!))
-                .toList(),
-          ),
-        ],
+      body: StreamBuilder<QuerySnapshot>(
+        stream: _fetchTasks(),
+        builder: (context, snapshot) {
+          if (snapshot.hasError) {
+            return const Center(child: Text("Error fetching tasks!"));
+          }
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(child: CircularProgressIndicator());
+          }
+
+          final allTasks = snapshot.data!.docs;
+          final groupedTasks = _categorizeTasks(allTasks);
+
+          return ListView(
+            children: [
+              _taskSection("Today", groupedTasks['today']!),
+              _taskSection("Future", groupedTasks['future']!),
+              _taskSection("Past", groupedTasks['past']!),
+            ],
+          );
+        },
       ),
       bottomNavigationBar: BottomNavBar(
         curentIndex: -1,
@@ -126,7 +184,7 @@ class _ToDoPageState extends State<ToDoPage> {
             duration: const Duration(milliseconds: 200),
             curve: Curves.ease,
           );
-          Navigator.pop(context); // Close ToDoPage and return to selected page
+          Navigator.pop(context);
         },
         children: [
           BottomNavBarItem(title: "Home", icon: Icons.home_filled),

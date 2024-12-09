@@ -510,12 +510,12 @@ class FirestoreService {
         return {
           'taskId': doc.id ?? '',
           'userId': doc.get('userId') ?? '',
-          'entryDate': doc.get('entryDate') ?? '',
           'done': doc.get('done') ?? false,
-          'dueDate': doc.get('dueDate') ?? '',
-          'description': doc.get('description') ?? '',
           'taskName': doc.get('taskName') ?? '',
-          'location': doc.get('location') ?? '',
+          // 'dueDate': doc.get('dueDate') ?? '',
+          // 'description': doc.get('description') ?? '',
+          // 'entryDate': doc.get('entryDate') ?? '',
+
         };
       }).toList();
       print('Tasks fetched for userId: ${userId}');
