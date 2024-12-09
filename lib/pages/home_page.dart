@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
         droplets = List.generate(
           (journalData['water'] as int),
           (_) => Icon(Icons.water_drop_outlined,
-              size: MediaQuery.of(context).size.width * 0.05),
+              size: MediaQuery.of(context).size.width * 0.01),
         );
       });
 
@@ -244,7 +244,7 @@ class _HomePageState extends State<HomePage> {
   List<Widget> droplets = [];
 
   void _addDroplet() async {
-    if (droplets.length >= 8) {
+    if (droplets.length >= 7) {
       // Do nothing if 8 droplets are already added
       showDialog(
         context: context,
@@ -264,7 +264,7 @@ class _HomePageState extends State<HomePage> {
 
     setState(() {
       droplets
-          .add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
+          .add(Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
     });
 
     print("Current droplets: ${droplets.length}");
@@ -279,7 +279,7 @@ class _HomePageState extends State<HomePage> {
     }
 
     // Check if we've completed a cup (8 droplets)
-    if (droplets.length >= 8) {
+    if (droplets.length >= 7) {
       // Increment the cup count in Firestore
       await _fsService.incrementCupsDrank(todaysJournalId!);
 
@@ -451,7 +451,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed: droplets.length >= 8
+                      onPressed: droplets.length >=8
                           ? null
                           : _addDroplet, // Disable if 8 droplets
                     ),
