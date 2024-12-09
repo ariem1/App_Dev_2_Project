@@ -423,7 +423,7 @@ class _JournalPageState extends State<JournalPage> {
                         SizedBox(height: 10),
                         Container(
                           width: 372,
-                          height: 200,
+                          height: 350,
                           margin: EdgeInsets.symmetric(vertical: 10),
                           child: isEditing
                               ? SingleChildScrollView(

@@ -378,7 +378,7 @@ class _SettingsPageState extends State<SettingsPage> {
                 onPressed: _pickDateTime,
                 child: const Text(
                   'Select Notification Time',
-                  style: TextStyle(color: Colors.blue),
+                  style: TextStyle(color: Colors.lightBlue),
                 ),
               ),
               ElevatedButton(
@@ -388,10 +388,6 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
                 child: const Text('Enable Notification'),
               ),
-              // ElevatedButton(
-              //   onPressed: _showImmediateNotification,
-              //   child: const Text('Test Immediate Notification'),
-              // ),
 
             ],),
         ),
@@ -401,9 +397,9 @@ class _SettingsPageState extends State<SettingsPage> {
 
   Color _getColorFromOption(String colorOption) {
     if (colorOption == 'Option 2') {
-      return Colors.pink;
+      return Colors.pink.shade50;
     } else if (colorOption == 'Option 3') {
-      return Colors.purple;
+      return Colors.purple.shade50;
     }
     return const Color(0xFFE3EFF9); // Default blue color
   }

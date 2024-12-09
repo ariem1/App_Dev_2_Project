@@ -91,22 +91,20 @@ class _HomePageState extends State<HomePage> {
         return;
       }
 
+      final int waterCount = (journalData['water'] as int? ?? 0).clamp(0, 8);
+
       setState(() {
-        spending =
-            double.tryParse(journalData['balance']?.toString() ?? '0.0') ?? 0.0;
-        todaysJournalId = journalData['journalId'];
         _selectedMood = journalData['mood'];
+        spending = journalData['balance'];
         droplets = List.generate(
-          (journalData['water'] as int),
-          (_) => Icon(Icons.water_drop_outlined,size: 27)
-          //    size: MediaQuery.of(context).size.width * 0.04),
+          waterCount,
+              (_) => const Icon(
+            Icons.water_drop_outlined,
+            size: 27,
+          ),
         );
       });
 
-      setState(() {
-        droplets
-            .add(Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
-      });
 
       print('Journal data loaded: $journalData');
     } catch (e) {
@@ -249,8 +247,9 @@ class _HomePageState extends State<HomePage> {
   List<Widget> droplets = [];
 
   void _addDroplet() async {
+
     if (droplets.length >= 7) {
-      // Do nothing if 8 droplets are already added
+      print(droplets.length);
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
@@ -264,13 +263,26 @@ class _HomePageState extends State<HomePage> {
           ],
         ),
       );
-      return;
-    }
 
-    setState(() {
-      droplets
-          .add(Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
-    });
+        // Increment the cup count in Firestore
+        await _fsService.incrementCupsDrank(todaysJournalId!);
+
+        // Reset droplets
+        setState(() {
+          droplets.clear();
+        });
+
+        print("Completed a cup! Droplets reset.");
+      // }
+
+      return;
+    } else {
+
+      setState(() {
+        droplets.add(
+            Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
+      });
+    }
 
     print("Current droplets: ${droplets.length}");
 
@@ -283,18 +295,7 @@ class _HomePageState extends State<HomePage> {
       _fsService.updateJournalWater(todaysJournalId!, droplets.length);
     }
 
-    // Check if we've completed a cup (8 droplets)
-    if (droplets.length >= 7) {
-      // Increment the cup count in Firestore
-      await _fsService.incrementCupsDrank(todaysJournalId!);
 
-      // Reset droplets
-      setState(() {
-        droplets.clear();
-      });
-
-      print("Completed a cup! Droplets reset.");
-    }
   }
 
   /////////////// MOOD ///////////////////
@@ -348,7 +349,7 @@ class _HomePageState extends State<HomePage> {
 
       // Fetch today's journal ID
       String? journalId =
-      await _fsService.getJournalIdByUserIdAndDate_2(currentUserId!);
+          await _fsService.getJournalIdByUserIdAndDate_2(currentUserId!);
 
       if (journalId == null || journalId.isEmpty) {
         print('No journal ID found. Creating journal failed.');
@@ -380,9 +381,9 @@ class _HomePageState extends State<HomePage> {
         'timestamp': Timestamp.now(),
       });
 
-      // Update the journal document's balance in Firestore
+      // Update the journal's balance in Firestore
       DocumentReference journalRef =
-      FirebaseFirestore.instance.collection('journals').doc(journalId);
+          FirebaseFirestore.instance.collection('journals').doc(journalId);
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         DocumentSnapshot snapshot = await transaction.get(journalRef);
@@ -401,7 +402,7 @@ class _HomePageState extends State<HomePage> {
         // Update the UI
         if (mounted) {
           setState(() {
-            spending = updatedBalance; // Update local variable for display
+            spending = updatedBalance;
             description = '';
             budgetController.clear();
           });
@@ -419,7 +420,6 @@ class _HomePageState extends State<HomePage> {
       );
     }
   }
-
 
   Widget easyView() {
     return SingleChildScrollView(
@@ -456,9 +456,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed: droplets.length >=7
-                          ? null
-                          : _addDroplet, // Disable if 8 droplets
+                       onPressed:  _addDroplet,
                     ),
                   ],
                 ),
@@ -561,7 +559,6 @@ class _HomePageState extends State<HomePage> {
                         onPressed: () async {
                           addSpending();
                           FocusScope.of(context).unfocus();
-
                         }),
                   ],
                 ),
