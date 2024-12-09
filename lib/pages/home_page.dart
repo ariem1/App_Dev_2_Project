@@ -624,7 +624,7 @@ class _HomePageState extends State<HomePage> {
             // To-Do List
             Flexible(
               child: isLoading
-                  ? Center(child: CircularProgressIndicator())
+                  ? const Center(child: CircularProgressIndicator())
                   : tasks.isEmpty
                       ? Center(child: Text('No tasks found.'))
                       : ListView.builder(
@@ -721,7 +721,6 @@ class _HomePageState extends State<HomePage> {
                     onPressed: () {
                       addTask(currentUserId!, taskController.text.trim());
                       FocusScope.of(context).unfocus();
-
                     },
                     icon: const Icon(Icons.add),
                   ),

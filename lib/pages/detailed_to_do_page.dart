@@ -61,25 +61,7 @@ class _DetailedToDoPageState extends State<DetailedToDoPage> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Row(
-                  //   children: [
-                  //     DropdownButton<String>(
-                  //       value: selectedCategory,
-                  //       items: const [
-                  //         DropdownMenuItem(
-                  //             value: "Category", child: Text("Category")),
-                  //         DropdownMenuItem(value: "Work", child: Text("Work")),
-                  //         DropdownMenuItem(
-                  //             value: "Personal", child: Text("Personal")),
-                  //       ],
-                  //       onChanged: (value) {
-                  //         setState(() {
-                  //           selectedCategory = value;
-                  //         });
-                  //       },
-                  //     ),
-                  //   ],
-                  // ),
+
                   const SizedBox(height: 30),
                   _fieldRow("Title", _titleController),
 
@@ -145,7 +127,7 @@ class _DetailedToDoPageState extends State<DetailedToDoPage> {
             icon: Icon(isEditing ? Icons.check : Icons.edit),
             label: Text(isEditing ? "Save" : "Edit"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.blue.shade300,
+              backgroundColor: Colors.blue.shade200,
               foregroundColor: Colors.white,
             ),
           ),
@@ -154,7 +136,7 @@ class _DetailedToDoPageState extends State<DetailedToDoPage> {
             icon: const Icon(Icons.delete, size: 18),
             label: const Text("Delete"),
             style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red.shade300,
+              backgroundColor: Colors.red.shade200,
               foregroundColor: Colors.white,
             ),
           ),
@@ -355,7 +337,7 @@ class _DetailedToDoPageState extends State<DetailedToDoPage> {
     }
   }
 
-  //////   FIREBASE STUFF
+  //////   FIREBASE
   // Fetch task details and update state
   Future<void> initializeTaskDetails() async {
     final fetchedTaskData = await _fsService.fetchATask(widget.taskId);

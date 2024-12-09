@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_datetime_picker/flutter_datetime_picker.dart' hide DatePickerTheme; // Hide the conflicting import
+import 'package:intl/intl.dart';
 import 'package:timezone/data/latest_all.dart' as tz;
 import 'package:timezone/timezone.dart' as tz;
 import 'package:aura_journal/firestore_service.dart';
+import 'package:flutter/services.dart';
+//import 'package:android_intent_plus/android_intent.dart';
+import 'package:permission_handler/permission_handler.dart';
+
 
 class SettingsPage extends StatefulWidget {
   final String journalName;
@@ -37,9 +41,8 @@ class _SettingsPageState extends State<SettingsPage> {
     _journalNameController = TextEditingController(text: widget.journalName);
     _selectedColor = 'Option 1';
     _selectedLanguage = 'English';
-
-    fetchJournalName();
     _initializeNotifications();
+    fetchJournalName();
   }
 
   Future<void> _initializeNotifications() async {
@@ -50,44 +53,207 @@ class _SettingsPageState extends State<SettingsPage> {
     InitializationSettings(android: androidInitializationSettings);
 
     await flutterLocalNotificationsPlugin.initialize(initializationSettings);
-    tz.initializeTimeZones(); // Initialize time zones
+    tz.initializeTimeZones();
+
+    // Request Notification Permission
+    await _requestNotificationPermission();
   }
 
-  Future<void> _scheduleNotification() async {
-    if (_selectedDateTime == null) {
+
+  Future<void> _requestNotificationPermission() async {
+    if (await Permission.notification.isDenied) {
+      print('Notifications denied');
+
+      final result = await Permission.notification.request();
+      if (result.isGranted) {
+        print('Notification permission granted');
+      } else {
+        print('Notification permission denied');
+      }
+    } else {
+      print('Notification permission already granted');
+    }
+  }
+
+
+
+  Future<void> _requestExactAlarmPermission() async {
+    const platform = MethodChannel('com.example.exact_alarm_permission');
+  print('Notifications');
+    try {
+      // Check if permission is already granted
+      final bool? isPermissionGranted =
+      await platform.invokeMethod('checkExactAlarmPermission');
+
+      if (isPermissionGranted != null && isPermissionGranted) {
+        print('Exact Alarm permission already granted');
+        return; // Exit if permission is already granted
+      }
+
+      // If permission is not granted, navigate to the alarm settings using native code
+      await platform.invokeMethod('openAlarmSettings');
+    } on PlatformException catch (e) {
+      print("Error requesting exact alarm permission: $e");
+    }
+  }
+
+
+
+  //
+  // Future<void> _scheduleNotification() async {
+  //   // Request exact alarm permission
+  //   await _requestExactAlarmPermission();
+  //   await _requestNotificationPermission();
+  //
+  //   if (_selectedDateTime == null) {
+  //     ScaffoldMessenger.of(context).showSnackBar(
+  //       const SnackBar(content: Text('Please select a date and time')),
+  //     );
+  //     return;
+  //   }
+  //
+  //   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+  //     'journal_channel', // Channel ID
+  //     'Journal Reminders', // Channel Name
+  //     channelDescription: 'Reminders to log your journal',
+  //     importance: Importance.high,
+  //     priority: Priority.high,
+  //   );
+  //
+  //   const NotificationDetails notificationDetails =
+  //   NotificationDetails(android: androidDetails);
+  //
+  //   await flutterLocalNotificationsPlugin.zonedSchedule(
+  //     0,
+  //     'Reminder',
+  //     'Don’t forget to log your journal!',
+  //     tz.TZDateTime.from(_selectedDateTime!, tz.local),
+  //     notificationDetails,
+  //     androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+  //     uiLocalNotificationDateInterpretation:
+  //     UILocalNotificationDateInterpretation.absoluteTime,
+  //   );
+  //
+  //
+  //   print("Notification scheduled for: $_selectedDateTime");
+  //
+  //   print("Current time: ${DateTime.now()}");
+  //   print("Scheduled time: $_selectedDateTime");
+  //
+  //
+  //   ScaffoldMessenger.of(context).showSnackBar(
+  //     const SnackBar(content: Text('Notification scheduled successfully')),
+  //   );
+  // }
+  //
+
+  Future<void> _scheduleNotification(DateTime scheduledTime) async {
+    // Calculate the delay in seconds between now and the scheduled time
+    final Duration delay = scheduledTime.difference(DateTime.now());
+
+    if (delay.isNegative) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please select a date and time')),
+        const SnackBar(content: Text('Selected time is in the past!')),
       );
+      print("Error: Selected time is in the past.");
       return;
     }
 
+    print("Notification will be displayed after ${delay.inSeconds} seconds.");
+
     const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
       'journal_channel', // Channel ID
-      'Journal Reminders', // Channel name
-      channelDescription: 'Reminders to log your journal',
+      'Journal Reminders', // Channel Name
+      channelDescription: 'Scheduled Test Notification',
       importance: Importance.high,
       priority: Priority.high,
+      playSound: true,
     );
 
-    const NotificationDetails notificationDetails = NotificationDetails(
-      android: androidDetails,
-    );
+    const NotificationDetails notificationDetails =
+    NotificationDetails(android: androidDetails);
 
-    await flutterLocalNotificationsPlugin.zonedSchedule(
-      0, // Notification ID
-      'Reminder', // Notification title
-      'Don’t forget to log your journal!', // Notification body
-      tz.TZDateTime.from(_selectedDateTime!, tz.local), // Time in local time zone
-      notificationDetails,
-      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle, // Fixed parameter
-      uiLocalNotificationDateInterpretation:
-      UILocalNotificationDateInterpretation.absoluteTime,
-    );
+    // Delay and trigger the notification
+    Future.delayed(delay, () async {
+      await flutterLocalNotificationsPlugin.show(
+        1, // Notification ID
+        'Scheduled Reminder', // Notification Title
+        'This is your scheduled notification. ${scheduledTime.hour}: ${scheduledTime.minute} ', // Notification Body
+        notificationDetails,
+      );
+
+      print("Notification triggered at: ${DateTime.now()}");
+    });
 
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Notification scheduled successfully')),
     );
+
+    print("Notification scheduled for: $scheduledTime");
   }
+
+
+
+
+
+
+
+  Future<void> _pickDateTime() async {
+    DateTime? pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+    );
+
+    if (pickedDate != null) {
+      TimeOfDay? pickedTime = await showTimePicker(
+        context: context,
+        initialTime: TimeOfDay.now(),
+      );
+
+      if (pickedTime != null) {
+        setState(() {
+          _selectedDateTime = DateTime(
+            pickedDate.year,
+            pickedDate.month,
+            pickedDate.day,
+            pickedTime.hour,
+            pickedTime.minute,
+          );
+        });
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              'Selected Date: ${DateFormat('MMMM d, y - hh:mm a').format(_selectedDateTime!)}',
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _showImmediateNotification() async {
+    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+      'journal_channel', 'Journal Reminders',
+      channelDescription: 'Immediate Test Notification',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+    );
+
+    const NotificationDetails notificationDetails =
+    NotificationDetails(android: androidDetails);
+
+    await flutterLocalNotificationsPlugin.show(
+      0, // Notification ID
+      'Test Notification',
+      'This is an immediate test notification',
+      notificationDetails,
+    );
+  }
+
 
   Future<void> fetchJournalName() async {
     String? userId = fsService.getCurrentUser()?.uid;
@@ -123,92 +289,54 @@ class _SettingsPageState extends State<SettingsPage> {
                   children: [
                     const Text(
                       'Journal Name',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     TextField(
                       controller: _journalNameController,
-                      decoration: const InputDecoration(border: OutlineInputBorder()),
+                      decoration:
+                      const InputDecoration(border: OutlineInputBorder()),
                     ),
                     const SizedBox(height: 20),
                     const Text(
                       'Color',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildRadio('Option 1', 'Blue', _selectedColor),
-                        _buildRadio('Option 2', 'Pink', _selectedColor),
-                        _buildRadio('Option 3', 'Purple', _selectedColor),
-                      ],
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 20),
                     const Text(
                       'Language',
-                      style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildRadio('English', 'English', _selectedLanguage),
-                        _buildRadio('French', 'French', _selectedLanguage),
-                      ],
+                      style:
+                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
                   ],
                 ),
               ),
               const SizedBox(height: 20),
               TextButton(
-                onPressed: () {
-                  DatePicker.showDateTimePicker(
-                    context,
-                    showTitleActions: true,
-                    onChanged: (date) => setState(() {
-                      _selectedDateTime = date;
-                    }),
-                    onConfirm: (date) {
-                      setState(() {
-                        _selectedDateTime = date;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Selected Date: $date'),
-                        ),
-                      );
-                    },
-                  );
-                },
+                onPressed: _pickDateTime,
                 child: const Text(
                   'Select Notification Time',
                   style: TextStyle(color: Colors.blue),
                 ),
               ),
               ElevatedButton(
-                onPressed: _scheduleNotification,
+                onPressed: () {
+                  DateTime scheduledTime = _selectedDateTime!;
+                  _scheduleNotification(scheduledTime);
+                },
                 child: const Text('Enable Notification'),
               ),
+              ElevatedButton(
+                onPressed: _showImmediateNotification,
+                child: const Text('Test Immediate Notification'),
+              ),
+
             ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _buildRadio(String value, String label, String? groupValue) {
-    return Row(
-      children: [
-        Radio<String>(
-          value: value,
-          groupValue: groupValue,
-          onChanged: (value) {
-            setState(() {
-              _selectedColor = value;
-            });
-          },
-        ),
-        Text(label),
-      ],
     );
   }
 }

@@ -4,13 +4,29 @@ import 'package:aura_journal/pages/main_page.dart';
 import 'package:aura_journal/pages/splash_screen.dart';
 import 'firestore_service.dart';
 import 'package:timezone/data/latest.dart' as tz;
-import 'package:timezone/timezone.dart' as tz;
+//import 'package:timezone/timezone.dart' as tz;
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+
 
 Future<void> main() async {
   //Ensure timezone is initialized
   tz.initializeTimeZones();
   // Ensure Firebase is initialized
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize FlutterLocalNotificationsPlugin
+  final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
+  FlutterLocalNotificationsPlugin();
+  // Notification Initialization
+  const AndroidInitializationSettings initializationSettingsAndroid =
+  AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  const InitializationSettings initializationSettings =
+  InitializationSettings(android: initializationSettingsAndroid);
+
+  await flutterLocalNotificationsPlugin.initialize(initializationSettings);
+
+
   await Firebase.initializeApp();
 
   print('Main: Firebase Initialized');
