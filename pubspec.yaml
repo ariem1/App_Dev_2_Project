@@ -44,6 +44,7 @@ dependencies:
   geolocator: ^10.1.0
   google_maps_webservice: ^0.0.19
   geocoding: ^2.1.0
+  flutter_native_splash: any
 
 
 

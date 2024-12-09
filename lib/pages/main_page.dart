@@ -10,7 +10,6 @@ import 'package:aura_journal/firestore_service.dart';
 class MainPage extends StatefulWidget {
   final void Function(Color) onColorUpdate;
 
-
   const MainPage({super.key, required this.onColorUpdate});
 
   @override
@@ -18,49 +17,43 @@ class MainPage extends StatefulWidget {
 }
 
 class _MainPageState extends State<MainPage> {
-  // DB connection
+  // Firestore connection
   final FirestoreService _fsService = FirestoreService();
   final PageController controller = PageController();
   int index = 0;
   String _journalName = "Journal"; // Default journal name
 
-  // Control flag to show ToDoPage
   final List<Widget> pages = [];
 
   @override
   void initState() {
     super.initState();
 
-    // Initialize pages inside initState to access widget properties
+    // Initialize the pages list
     pages.addAll([
-      HomePage(onColorUpdate: widget.onColorUpdate, controller: controller,),
+      HomePage(onColorUpdate: widget.onColorUpdate, controller: controller),
       const MoodPage(),
       const BudgetPage(),
       const WaterPage(),
     ]);
 
-    // Fetch the journal name from Firestore
+    // Fetch and set the journal name
     fetchJournalName();
   }
 
-  // Fetch the journal name from Firestore and update the state
   Future<void> fetchJournalName() async {
     String? userId = _fsService.getCurrentUser()?.uid;
 
     if (userId != null) {
       try {
-        // Fetch the user document from Firestore
         final docSnapshot = await _fsService.getDocument(
           collection: 'users',
           documentId: userId,
         );
 
-        // Check if the document exists
         if (docSnapshot.exists) {
-          // Extract the journal name from the document
           String journalName = docSnapshot.data()?['journalName'] ?? 'Journal';
 
-          // Update the state to reflect the journal name
           setState(() {
             _journalName = journalName;
           });
@@ -79,13 +72,12 @@ class _MainPageState extends State<MainPage> {
     return Scaffold(
       extendBody: true,
       appBar: AppBar(
-        title: Text(_journalName), // Display journal name here
+        title: Text(_journalName), // Display the fetched journal name
         actions: [
           PopupMenuButton<String>(
             icon: const Icon(Icons.more_vert),
             onSelected: (value) async {
               if (value == 'Settings') {
-                // Navigate to Settings page and wait for the result
                 final updatedName = await Navigator.push(
                   context,
                   MaterialPageRoute(
@@ -97,7 +89,6 @@ class _MainPageState extends State<MainPage> {
                   ),
                 );
 
-                // Update the journal name if a new one was returned
                 if (updatedName != null) {
                   _updateJournalName(updatedName);
                 }
@@ -113,7 +104,6 @@ class _MainPageState extends State<MainPage> {
         ],
       ),
       body: PageView(
-        scrollDirection: Axis.horizontal,
         controller: controller,
         onPageChanged: (value) {
           setState(() {
@@ -136,16 +126,15 @@ class _MainPageState extends State<MainPage> {
           });
         },
         children: [
-          BottomNavBarItem(title: "   Home   ", icon: Icons.home_filled),
-          BottomNavBarItem(title: "   Mood   ", icon: Icons.mood),
-          BottomNavBarItem(title: '   Budget   ', icon: Icons.attach_money),
-          BottomNavBarItem(title: "   Water   ", icon: Icons.water_drop_outlined),
+          BottomNavBarItem(title: "Home", icon: Icons.home_filled),
+          BottomNavBarItem(title: "Mood", icon: Icons.mood),
+          BottomNavBarItem(title: 'Budget', icon: Icons.attach_money),
+          BottomNavBarItem(title: "Water", icon: Icons.water_drop_outlined),
         ],
       ),
     );
   }
 
-  // Update journal name and refresh AppBar title
   void _updateJournalName(String newName) {
     setState(() {
       _journalName = newName;

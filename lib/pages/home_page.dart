@@ -240,23 +240,51 @@ class _HomePageState extends State<HomePage> {
   // List to store water drop icons
   List<Widget> droplets = [];
 
-  // Function to add a droplet
   void _addDroplet() async {
+    if (droplets.length >= 8) {
+      // Do nothing if 8 droplets are already added
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Congratulations!"),
+          content: Text("You have completed 8 cups of water for the day!"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("OK"),
+            ),
+          ],
+        ),
+      );
+      return;
+    }
+
     setState(() {
-      droplets
-          .add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
+      droplets.add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
     });
 
-    print(droplets.length);
+    print("Current droplets: ${droplets.length}");
 
-    bool journalExists = await _checkJournalEntry(); // Await the check
+    bool journalExists = await _checkJournalEntry();
 
     if (!journalExists) {
       await _fsService.addJournalEntry(droplets.length, 5, '', currentUserId!);
       print('Journal entry created and water added');
     } else {
-      //adds water
       _fsService.updateJournalWater(todaysJournalId!, droplets.length);
+    }
+
+    // Check if we've completed a cup (8 droplets)
+    if (droplets.length >= 8) {
+      // Increment the cup count in Firestore
+      await _fsService.incrementCupsDrank(todaysJournalId!);
+
+      // Reset droplets
+      setState(() {
+        droplets.clear();
+      });
+
+      print("Completed a cup! Droplets reset.");
     }
   }
 
@@ -400,7 +428,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed: _addDroplet,
+                      onPressed: droplets.length >= 8 ? null : _addDroplet, // Disable if 8 droplets
                     ),
                   ],
                 ),

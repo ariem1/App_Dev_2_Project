@@ -710,4 +710,19 @@ class FirestoreService {
       rethrow;
     }
   }
+  /////////WATER////////
+  Future<void> incrementCupsDrank(String journalId) async {
+    try {
+      DocumentReference journalRef =
+      FirebaseFirestore.instance.collection('journals').doc(journalId);
+
+      await journalRef.update({
+        'water': FieldValue.increment(1),
+      });
+      print("Cup count incremented.");
+    } catch (e) {
+      print("Error incrementing cupsDrank: $e");
+    }
+  }
+
 }
