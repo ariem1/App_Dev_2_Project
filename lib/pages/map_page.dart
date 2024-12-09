@@ -3,11 +3,15 @@ import 'package:geocoding/geocoding.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:google_maps_webservice/places.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:aura_journal/firestore_service.dart';
 
 class MapPage extends StatefulWidget {
   final void Function(Color) onColorUpdate;
+  final String taskId;
 
-  const MapPage({Key? key, required this.onColorUpdate}) : super(key: key);
+
+  const MapPage({Key? key, required this.onColorUpdate, required this.taskId}) : super(key: key);
 
   @override
   State<MapPage> createState() => _MapPageState();
@@ -21,6 +25,10 @@ class _MapPageState extends State<MapPage> {
 
   final TextEditingController _destinationController = TextEditingController();
   final String _apiKey = 'AIzaSyCKgI8GNYJz7JOt6m7XG6xg2ScwDO5TJYM'; //For the geolocator to work
+  final FirestoreService _fsService = FirestoreService();
+  String? _storeName;
+
+
 
   @override
   void initState() {
@@ -147,8 +155,11 @@ class _MapPageState extends State<MapPage> {
                     child: const Text("Cancel"),
                   ),
                   ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
+                    onPressed: ()  {
+                      _fsService.updateTaskLocation(widget.taskId, address);
+                      print('Map: Location / address added to Firebase');
+                      Navigator.pop(context, true); // Back to detailedToDo page
+
                     },
                     child: const Text("Done"),
                   ),
@@ -168,7 +179,18 @@ class _MapPageState extends State<MapPage> {
       appBar: AppBar(
         title: const Text('Find Destination'),
        // backgroundColor: widget.onColorUpdate,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back), // Custom back button icon
+          onPressed: () {
+            // Add custom functionality here
+            print('Back button pressed');
+
+            // Navigate back to the previous screen (To Do  page)
+            Navigator.pop(context, true);
+          },
+        ),
       ),
+
       body: Stack(
         children: [
           GoogleMap(

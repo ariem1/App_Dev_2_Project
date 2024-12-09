@@ -1,10 +1,32 @@
 import 'package:flutter/material.dart';
 import 'nav_bar.dart'; // Import the BottomNavBar class
 
-class ToDoPage extends StatelessWidget {
+class ToDoPage extends StatefulWidget {
   final PageController controller;
 
   const ToDoPage({super.key, required this.controller});
+
+  @override
+  State<ToDoPage> createState() => _ToDoPageState();
+}
+
+class _ToDoPageState extends State<ToDoPage> {
+
+
+  // Example tasks for Today, Future, and Past sections
+  final todayTasks = [
+    {"title": "Label", "description": "Description"},
+    {"title": "Label", "description": "Description"},
+  ];
+
+  final futureTasks = [
+    {"title": "Future Task 1", "description": "Description"},
+  ];
+
+  final pastTasks = [
+    {"title": "Past Task 1", "description": "Description"},
+    {"title": "Past Task 2", "description": "Description"},
+  ];
 
   // A helper method to build task cards
   Widget _buildTaskCard(String title, String description) {
@@ -59,21 +81,6 @@ class ToDoPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Example tasks for Today, Future, and Past sections
-    final todayTasks = [
-      {"title": "Label", "description": "Description"},
-      {"title": "Label", "description": "Description"},
-    ];
-
-    final futureTasks = [
-      {"title": "Future Task 1", "description": "Description"},
-    ];
-
-    final pastTasks = [
-      {"title": "Past Task 1", "description": "Description"},
-      {"title": "Past Task 2", "description": "Description"},
-    ];
-
     return Scaffold(
       appBar: AppBar(
         title: const Text("To-Do List"),
@@ -114,13 +121,12 @@ class ToDoPage extends StatelessWidget {
         curentIndex: -1,
         backgroundColor: Colors.white,
         onTap: (value) {
-
-          controller.animateToPage(
+          widget.controller.animateToPage(
             value,
             duration: const Duration(milliseconds: 200),
             curve: Curves.ease,
           );
-          Navigator.pop(context); // Close ToDoPage and return go to page i clicked like budget
+          Navigator.pop(context); // Close ToDoPage and return to selected page
         },
         children: [
           BottomNavBarItem(title: "Home", icon: Icons.home_filled),

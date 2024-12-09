@@ -25,7 +25,7 @@ class JournalPage extends StatefulWidget {
 class _JournalPageState extends State<JournalPage> {
   final FirestoreService _fsService = FirestoreService();
   bool isEditing = false;
-  DateTime now = DateTime.now().toUtc();
+  DateTime now = DateTime.now();
   late String formattedNow;
   late String formattedSelectDate;
 
@@ -198,11 +198,13 @@ class _JournalPageState extends State<JournalPage> {
   void initState() {
     super.initState();
     _fetchJournalData();
-    print(widget.selectedDate);
+
+
 
     formattedNow = DateFormat('yyyy-MM-dd').format(now);
     formattedSelectDate = DateFormat('yyyy-MM-dd').format(widget.selectedDate);
-
+    print(formattedSelectDate);
+    print(formattedNow);
 
   }
 
@@ -221,8 +223,7 @@ class _JournalPageState extends State<JournalPage> {
       appBar: AppBar(
         title: Text('Journal Entry'),
         actions: [
-
-          if (formattedSelectDate == formattedNow)
+          if (formattedSelectDate == formattedNow )
             IconButton(
               icon: Icon(isEditing ? Icons.check : Icons.edit),
               onPressed: isEditing

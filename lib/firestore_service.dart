@@ -92,7 +92,6 @@ class FirestoreService {
   // Method to check if a journal entry exists for today
   Future<bool> journalEntryExistsForToday(String currentUserId) async {
     try {
-
       // Get the current date
       DateTime now = DateTime.now();
       DateTime startOfDay =
@@ -117,13 +116,13 @@ class FirestoreService {
 
   // Method to add a journal
   Future<void> addJournalEntry(
-      int water,
-      int mood,
+    int water,
+    int mood,
     String content,
-      String userId,
+    String userId,
   ) async {
     try {
-     // String? userId = getCurrentUserId();
+      // String? userId = getCurrentUserId();
 
       // Add a new journal entry
       DocumentReference journal = await _db.collection('journals').add({
@@ -137,7 +136,6 @@ class FirestoreService {
         'description': '',
         'water': water,
         'imagePath': ''
-
       });
       print('Journal entry added successfully');
 
@@ -158,9 +156,9 @@ class FirestoreService {
   }
 
   // Update a journal - entry
-  Future<void> updateJournalEntry(String entry, String desc, String title, String? currentUserId) async {
+  Future<void> updateJournalEntry(
+      String entry, String desc, String title, String? currentUserId) async {
     try {
-
       String? journalId = await getJournalIdByUserIdAndDate_2(currentUserId!);
 
       print('Journal id: $journalId');
@@ -169,7 +167,6 @@ class FirestoreService {
         'content': entry,
         'description': desc,
         'title': title,
-
       });
       print('Journal entry / content updated successfully');
     } catch (e) {
@@ -188,7 +185,7 @@ class FirestoreService {
       DateTime now = DateTime.now();
       DateTime startOfDay = DateTime(now.year, now.month, now.day);
       DateTime endOfDay =
-      startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
+          startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
 
       // Convert to Firestore Timestamps
       Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
@@ -220,7 +217,6 @@ class FirestoreService {
         'water': document.get('water') ?? 0,
         'imagePath': document.get('imagePath') ?? '',
         'budget': document.get('budget') ?? 0,
-
       };
     } catch (e) {
       print('Error fetching journal entry: $e');
@@ -228,23 +224,23 @@ class FirestoreService {
     }
   }
 
-
   //Fetches the data of a journal by date -- for journal page
   Future<Map<String, dynamic>> fetchJournalDataByDateAndUser(
       DateTime selectedDate, String? userId) async {
     // Get start and end of the target day
-    DateTime startOfDay = DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
+    DateTime startOfDay =
+        DateTime(selectedDate.year, selectedDate.month, selectedDate.day);
     DateTime endOfDay = startOfDay.add(Duration(days: 1));
     //String? userId = getCurrentUserId();
 
     print('Journal: for $userId');
 
-
     try {
       var querySnapshot = await FirebaseFirestore.instance
           .collection('journals')
           .where('userId', isEqualTo: userId)
-          .where('entryDate', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('entryDate',
+              isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
           .where('entryDate', isLessThan: Timestamp.fromDate(endOfDay))
           .get();
 
@@ -264,15 +260,13 @@ class FirestoreService {
         'mood': document.get('mood') ?? '',
         'entryDate': document.get('entryDate') ?? '',
         'water': document.get('water') ?? 0,
-        'imagePath':  document.get('imagePath') ?? '',
-
+        'imagePath': document.get('imagePath') ?? '',
       };
     } catch (e) {
       print('Journal: Errorr fetching journal entry: $e for $userId');
       return {};
     }
   }
-
 
   // Update a journal - mood
   Future<void> updateJournalMood(String journalId, int mood) async {
@@ -292,7 +286,6 @@ class FirestoreService {
   // Update a journal - mood
   Future<void> updateJournalWater(String journalId, int water) async {
     try {
-
       // Update the mood of the day's journal entry
       await _db.collection('journals').doc(journalId).update({
         'water': water,
@@ -360,10 +353,9 @@ class FirestoreService {
   Future<String?> getJournalIdByUserIdAndDate_2(String currentUserId) async {
     try {
       DateTime now = DateTime.now();
-      DateTime startOfDay =
-      DateTime(now.year, now.month, now.day);
+      DateTime startOfDay = DateTime(now.year, now.month, now.day);
       DateTime endOfDay =
-      startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
+          startOfDay.add(Duration(days: 1)).subtract(Duration(seconds: 1));
 
       // Convert to Firestore's Timestamp
       Timestamp startTimestamp = Timestamp.fromDate(startOfDay);
@@ -418,12 +410,11 @@ class FirestoreService {
       print('Imageee uploaded successfully. Path: images/$fileName');
 
       // Reference to the Firebase Storage location
-     Reference storage = FirebaseStorage.instance.ref().child('images/$fileName');
-
-
+      Reference storage =
+          FirebaseStorage.instance.ref().child('images/$fileName');
 
       // Upload the image file
-  UploadTask uploadTask = storage.putFile(image);
+      UploadTask uploadTask = storage.putFile(image);
 
       // Wait for the upload to complete
       TaskSnapshot snapshot = await uploadTask;
@@ -431,10 +422,9 @@ class FirestoreService {
       // Get the image's download URL
       String downloadURL = await snapshot.ref.getDownloadURL();
 
-      if (downloadURL != ""){
+      if (downloadURL != "") {
         print('Download URL: $downloadURL');
-
-      } else{
+      } else {
         print('booty');
       }
       print('Image uploaded successfully. Path: images/$fileName');
@@ -458,7 +448,6 @@ class FirestoreService {
     }
   }
 
-
 /////////// TASK //////////
 
 // Add a journal and return task -- done in the Home Page
@@ -467,11 +456,13 @@ class FirestoreService {
       // Add a new task entry
       DocumentReference taskEntry = await _db.collection('tasks').add({
         'userId': userId,
-        'entryDate': Timestamp.fromDate(DateTime.now()), // Store the current date
+        'entryDate':
+            Timestamp.fromDate(DateTime.now()), // current date
         'done': false,
         'dueDate': '',
         'description': '',
         'taskName': task,
+        'location': '',
       });
 
       // Get the document ID (taskId) from the DocumentReference
@@ -488,6 +479,7 @@ class FirestoreService {
         'done': taskSnapshot.get('done'),
         'dueDate': taskSnapshot.get('dueDate'),
         'description': taskSnapshot.get('description'),
+        'location': taskSnapshot.get('location'),
         'taskName': taskSnapshot.get('taskName'),
       };
     } catch (e) {
@@ -522,17 +514,46 @@ class FirestoreService {
           'done': doc.get('done') ?? false,
           'dueDate': doc.get('dueDate') ?? '',
           'description': doc.get('description') ?? '',
-          'taskName':  doc.get('taskName') ?? '',
-
+          'taskName': doc.get('taskName') ?? '',
+          'location': doc.get('location') ?? '',
         };
       }).toList();
       print('Tasks fetched for userId: ${userId}');
-
     } catch (e) {
       print('Error fetching tasks: $e');
       return [];
     }
   }
+
+  Future<Map<String, dynamic>> fetchATask(String taskId) async {
+    try {
+
+      var docSnapshot = await FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(taskId)
+          .get();
+
+      if (docSnapshot.exists) {
+        return {
+          'title': docSnapshot.data()?['title'] ?? '',
+          'description': docSnapshot.data()?['description'] ?? '',
+          'done': docSnapshot.data()?['done'] ?? '',
+          'dueDate': docSnapshot.data()?['dueDate'] ?? '',
+          'entryDate': docSnapshot.data()?['entryDate'] ?? '',
+          'location': docSnapshot.data()?['location'] ?? '',
+          'taskName': docSnapshot.data()?['taskName'] ?? '',
+        };
+      } else {
+        print('Task with ID $taskId not found.');
+        return {};
+      }
+    } catch (e) {
+      print('Error fetching task with ID $taskId: $e');
+      return {};
+    }
+  }
+
+
 
   // Update task completion
   Future<void> updateTaskCompletion(String taskId, bool done) async {
@@ -546,6 +567,20 @@ class FirestoreService {
       print('Error updating task: $e');
     }
   }
+
+  // Update task location
+  Future<void> updateTaskLocation(String taskId, String location) async {
+    try {
+      await FirebaseFirestore.instance
+          .collection('tasks')
+          .doc(taskId)
+          .update({'location': location});
+      print('Task $taskId location updated: $location');
+    } catch (e) {
+      print('Error updating task: $e');
+    }
+  }
+
 
   //////////////// BUDGET /////////
   //Create budget entry
@@ -639,8 +674,6 @@ class FirestoreService {
       return null;
     }
   }
-
-
 
   /// Get a single document by its ID
   Future<DocumentSnapshot<Map<String, dynamic>>> getDocument({

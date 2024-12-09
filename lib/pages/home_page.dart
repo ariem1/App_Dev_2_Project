@@ -213,7 +213,7 @@ class _HomePageState extends State<HomePage> {
         if (newTask != null) {
           setState(() {
             tasks.add({
-              "task": newTask['taskId'],
+              "taskId": newTask['taskId'],
               "taskName": newTask['taskName'],
               "done": newTask['done'],
               "dueDate": newTask['dueDate'],
@@ -262,22 +262,22 @@ class _HomePageState extends State<HomePage> {
 
   /////////////// MOOD ///////////////////
 
-  int _selectedMood = 5; // DEFAULT
+  int _selectedMood = -1; // DEFAULT
 
   Icon _buildIcon(int index) {
     switch (index) {
       case 0:
-        return const Icon(Icons.sentiment_very_dissatisfied); // Lowest rating
+        return const Icon(Icons.sentiment_very_dissatisfied);
       case 1:
-        return const Icon(Icons.sentiment_dissatisfied); // Moderate-low rating
+        return const Icon(Icons.sentiment_dissatisfied);
       case 2:
-        return const Icon(Icons.sentiment_neutral); // Neutral rating
+        return const Icon(Icons.sentiment_neutral);
       case 3:
-        return const Icon(Icons.sentiment_satisfied); // Moderate-high rating
+        return const Icon(Icons.sentiment_satisfied);
       case 4:
-        return const Icon(Icons.sentiment_very_satisfied); // Highest rating
+        return const Icon(Icons.sentiment_very_satisfied);
       default:
-        return const Icon(Icons.star_border); // Default icon
+        return const Icon(Icons.star_border);
     }
   }
 
@@ -619,29 +619,26 @@ class _HomePageState extends State<HomePage> {
                                 title: Align(
                                   alignment: Alignment.centerLeft,
                                   child: TextButton(
-                                    onPressed: () {
+                                    onPressed: () async {
                                       // Open the detailed view of the to-do
 
                                       print(
                                           '${task['taskId']} ${task['taskName']} ');
                                       // Go to Journal page
-                                      // Navigator.push(
-                                      //   context,
-                                      //   MaterialPageRoute(
-                                      //     builder: (context) => DetailedToDoPage(
-                                      //     controller: widget.controller,
-                                      //       taskId: task['taskId'],
-                                      //     ),
-                                      //   ),
-                                      // );
-                                      Navigator.push(
+                                    final result = await  Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => MapPage(
-                                              onColorUpdate:
-                                                  widget.onColorUpdate),
+                                          builder: (context) => DetailedToDoPage(
+                                            onColorUpdate: widget.onColorUpdate,
+                                          controller: widget.controller,
+                                            taskId: task['taskId'],
+                                          ),
                                         ),
                                       );
+                                      // Check if a task was deleted and refresh the home page
+                                      if (result == true) {
+                                        _getTasks(); //Reload tasks
+                                      }
                                     },
                                     style: TextButton.styleFrom(
                                       padding: EdgeInsets.zero,
@@ -691,6 +688,7 @@ class _HomePageState extends State<HomePage> {
                     onPressed: () {
                       addTask(currentUserId!, taskController.text.trim());
                       FocusScope.of(context).unfocus();
+
                     },
                     icon: const Icon(Icons.add),
                   ),
