@@ -3,8 +3,12 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:aura_journal/pages/main_page.dart';
 import 'package:aura_journal/pages/splash_screen.dart';
 import 'firestore_service.dart';
+import 'package:timezone/data/latest.dart' as tz;
+import 'package:timezone/timezone.dart' as tz;
 
 Future<void> main() async {
+  //Ensure timezone is initialized
+  tz.initializeTimeZones();
   // Ensure Firebase is initialized
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
