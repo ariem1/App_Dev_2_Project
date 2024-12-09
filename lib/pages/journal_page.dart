@@ -28,6 +28,7 @@ class _JournalPageState extends State<JournalPage> {
   DateTime now = DateTime.now();
   late String formattedNow;
   late String formattedSelectDate;
+  double spending = 0.0;
 
 
   // Controllers
@@ -77,7 +78,7 @@ class _JournalPageState extends State<JournalPage> {
         _journalTitleController.text = data['title'] ?? '';
         _journalDescController.text = data['description'] ?? '';
         _entryController.text = data['content'] ?? '';
-
+        spending = double.tryParse(data['balance']?.toString() ?? '0.0') ?? 0.0;
         // Initialize droplets based on fetched water count
         int waterCount = int.tryParse(data['water']?.toString() ?? '0') ?? 0;
         droplets = List.generate(
@@ -440,20 +441,9 @@ class _JournalPageState extends State<JournalPage> {
                               SizedBox(height: 10),
                               Row(
                                 children: [
-                                  Text("Balance: \$"),
-                                  Expanded(
-                                    child: isEditing
-                                        ? TextField(
-                                            controller: budgetController,
-                                            keyboardType: TextInputType.number,
-                                            decoration: InputDecoration(
-                                              hintText: "Enter amount",
-                                            ),
-                                          )
-                                        : Text(budgetController.text.isEmpty
-                                            ? '0.00'
-                                            : budgetController.text),
-                                  ),
+                                  Text("Balance: \$ "),
+                                  Text(spending.toStringAsFixed(2)),
+
                                 ],
                               ),
                             ],

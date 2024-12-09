@@ -47,11 +47,10 @@ class _BudgetPageState extends State<BudgetPage> {
     print('Budget Get user id: $currentUserId');
   }
 
-
   Future<void> _initializeBudgetId() async {
     try {
       final String? fetchedJournalId =
-      await _fsService.getJournalIdByUserIdAndDate_2(currentUserId!);
+          await _fsService.getJournalIdByUserIdAndDate_2(currentUserId!);
       final String? fetchedBudgetId = fetchedJournalId != null
           ? await _fsService.getBudgetIdForJournal(fetchedJournalId)
           : null;
@@ -82,7 +81,6 @@ class _BudgetPageState extends State<BudgetPage> {
     }
   }
 
-
   //function to set budget
   Future<void> _setBudget() async {
     double? enteredAmount = double.tryParse(_budgetTextController.text);
@@ -97,12 +95,24 @@ class _BudgetPageState extends State<BudgetPage> {
       setState(() {
         _budgetAmount = enteredAmount;
       });
+
       _budgetTextController.clear();
     } else if (enteredAmount != null && journalId != null) {
       await _fsService.setBudgetAmount(journalId!, enteredAmount);
 
       setState(() {
         _budgetAmount = enteredAmount;
+      });
+
+      double balance = _budgetAmount! - totalSpent;
+
+      print('balance: $balance');
+
+      await FirebaseFirestore.instance
+          .collection('journals')
+          .doc(journalId)
+          .update({
+        'balance': balance,
       });
       _budgetTextController.clear();
     } else {
@@ -113,6 +123,7 @@ class _BudgetPageState extends State<BudgetPage> {
   // Collection reference for spendings
   CollectionReference spendings =
       FirebaseFirestore.instance.collection('spendings');
+
 
   //delete spending
   Future<void> deleteSpending(String id) async {
@@ -126,11 +137,12 @@ class _BudgetPageState extends State<BudgetPage> {
       await spendings.doc(id).update({'description': description});
     }
   }
+
   void _calculateTotalSpent() async {
     if (budgetId != null) {
       try {
         final querySnapshot =
-        await spendings.where('budgetId', isEqualTo: budgetId).get();
+            await spendings.where('budgetId', isEqualTo: budgetId).get();
 
         double newTotalSpent = 0.0;
         for (var doc in querySnapshot.docs) {
@@ -140,6 +152,17 @@ class _BudgetPageState extends State<BudgetPage> {
         if (mounted) {
           setState(() {
             totalSpent = newTotalSpent;
+          });
+
+          double balance = _budgetAmount! - totalSpent;
+
+          print('balance: $balance');
+
+          await FirebaseFirestore.instance
+              .collection('journals')
+              .doc(journalId)
+              .update({
+            'balance': balance,
           });
         }
 
@@ -154,7 +177,6 @@ class _BudgetPageState extends State<BudgetPage> {
       }
     }
   }
-
 
   void _showOverSpendingDialog(double overspendAmount) {
     showDialog(
@@ -257,53 +279,57 @@ class _BudgetPageState extends State<BudgetPage> {
             ),
             SizedBox(height: 20),
             Expanded(
-              child: budgetId == null
-                  ? Center(child: CircularProgressIndicator())
-                  : StreamBuilder<QuerySnapshot>(
-                stream: FirebaseFirestore.instance
-                    .collection('spendings')
-                    .where('budgetId', isEqualTo: budgetId) // Match budgetId
-                    .snapshots(), // Real-time updates
-                builder: (context, snapshot) {
-                  if (snapshot.connectionState == ConnectionState.waiting) {
-                    return Center(child: CircularProgressIndicator());
-                  }
+                child: budgetId == null
+                    ? Center(child: CircularProgressIndicator())
+                    : StreamBuilder<QuerySnapshot>(
+                        stream: FirebaseFirestore.instance
+                            .collection('spendings')
+                            .where('budgetId',
+                                isEqualTo: budgetId) // Match budgetId
+                            .snapshots(), // Real-time updates
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                              ConnectionState.waiting) {
+                            return Center(child: CircularProgressIndicator());
+                          }
 
-                  if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                    return Center(child: Text('No spendings yet.'));
-                  }
+                          if (!snapshot.hasData ||
+                              snapshot.data!.docs.isEmpty) {
+                            return Center(child: Text('No spendings yet.'));
+                          }
 
-                  // Display the list of spendings
-                  return ListView(
-                    children: snapshot.data!.docs.map((doc) {
-                      double amount = doc['amount'] ?? 0.0;
-                      String description = doc['description'] ?? 'No description';
+                          // Display the list of spendings
+                          return ListView(
+                            children: snapshot.data!.docs.map((doc) {
+                              double amount = doc['amount'] ?? 0.0;
+                              String description =
+                                  doc['description'] ?? 'No description';
 
-                      return ListTile(
-                        title: Text('\$${amount.toStringAsFixed(2)}'),
-                        subtitle: Text('Description: $description'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: () => _showEditDialog(doc.id, description),
-                              icon: Icon(Icons.edit),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                deleteSpending(doc.id);
-                                _calculateTotalSpent();
-                              },
-                              icon: Icon(Icons.delete),
-                            ),
-                          ],
-                        ),
-                      );
-                    }).toList(),
-                  );
-                },
-              )
-            ),
+                              return ListTile(
+                                title: Text('\$${amount.toStringAsFixed(2)}'),
+                                subtitle: Text('Description: $description'),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      onPressed: () =>
+                                          _showEditDialog(doc.id, description),
+                                      icon: Icon(Icons.edit),
+                                    ),
+                                    IconButton(
+                                      onPressed: () {
+                                        deleteSpending(doc.id);
+                                        _calculateTotalSpent();
+                                      },
+                                      icon: Icon(Icons.delete),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          );
+                        },
+                      )),
           ],
         ),
       ),

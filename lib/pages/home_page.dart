@@ -31,6 +31,7 @@ class _HomePageState extends State<HomePage> {
 
   String? currentUserId;
   String? todaysJournalId;
+  double spending = 0.0;
 
   @override
   void initState() {
@@ -91,6 +92,8 @@ class _HomePageState extends State<HomePage> {
       }
 
       setState(() {
+        spending =
+            double.tryParse(journalData['balance']?.toString() ?? '0.0') ?? 0.0;
         todaysJournalId = journalData['journalId'];
         _selectedMood = journalData['mood'];
         droplets = List.generate(
@@ -260,7 +263,8 @@ class _HomePageState extends State<HomePage> {
     }
 
     setState(() {
-      droplets.add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
+      droplets
+          .add(Icon(Icons.water_drop_outlined, size: 30)); // Add a new droplet
     });
 
     print("Current droplets: ${droplets.length}");
@@ -333,18 +337,17 @@ class _HomePageState extends State<HomePage> {
       bool entryExists = await _checkJournalEntry();
 
       if (!entryExists) {
-        // Create a new journal entry
         await _fsService.addJournalEntry(0, -1, '', currentUserId!);
         print('Journal entry created');
       }
 
       // Fetch today's journal ID
       String? journalId =
-          await _fsService.getJournalIdByUserIdAndDate_2(currentUserId!);
+      await _fsService.getJournalIdByUserIdAndDate_2(currentUserId!);
 
       if (journalId == null || journalId.isEmpty) {
         print('No journal ID found. Creating journal failed.');
-        return; // Exit if no journal ID
+        return;
       }
       print('Journal ID: $journalId');
 
@@ -353,7 +356,7 @@ class _HomePageState extends State<HomePage> {
 
       if (budgetId == null || budgetId.isEmpty) {
         print('No budget ID found for the journal');
-        return; // Exit if no budget ID
+        return;
       }
       print('Budget ID: $budgetId');
 
@@ -361,37 +364,57 @@ class _HomePageState extends State<HomePage> {
       double spendingAmount = double.tryParse(budgetController.text) ?? 0.0;
       if (spendingAmount <= 0) {
         print('Invalid spending amount');
-        return; // Exit if spending amount is invalid
+        return;
       }
 
       // Add the spending to Firestore
       await spendings.add({
         'budgetId': budgetId,
         'amount': spendingAmount,
-        'description': description.isNotEmpty
-            ? description
-            : 'No description', // Default to "No description"
-        'timestamp': Timestamp.now(), // Add timestamp
+        'description': description.isNotEmpty ? description : 'No description',
+        'timestamp': Timestamp.now(),
       });
 
-      print('Spending added successfully');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Spending added successfully!"),
-        ),
-      );
+      // Update the journal document's balance in Firestore
+      DocumentReference journalRef =
+      FirebaseFirestore.instance.collection('journals').doc(journalId);
 
-      // Clear fields and update UI
-      if (mounted) {
-        setState(() {
-          description = '';
-          budgetController.clear();
-        });
-      }
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        DocumentSnapshot snapshot = await transaction.get(journalRef);
+
+        if (!snapshot.exists) {
+          throw Exception("Journal document does not exist!");
+        }
+
+        double currentBalance = (snapshot['balance'] ?? 0).toDouble();
+        double updatedBalance = currentBalance - spendingAmount;
+
+        // Update balance field
+        transaction.update(journalRef, {'balance': updatedBalance});
+        print('Balance updated to: $updatedBalance');
+
+        // Update the UI
+        if (mounted) {
+          setState(() {
+            spending = updatedBalance; // Update local variable for display
+            description = '';
+            budgetController.clear();
+          });
+        }
+      });
+
+      print('Spending added and balance updated successfully');
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Spending added successfully!")),
+      );
     } catch (e) {
       print('Error adding spending: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
     }
   }
+
 
   Widget easyView() {
     return SingleChildScrollView(
@@ -428,7 +451,9 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed: droplets.length >= 8 ? null : _addDroplet, // Disable if 8 droplets
+                      onPressed: droplets.length >= 8
+                          ? null
+                          : _addDroplet, // Disable if 8 droplets
                     ),
                   ],
                 ),
@@ -511,8 +536,8 @@ class _HomePageState extends State<HomePage> {
                           Text("Budget"),
                           SizedBox(height: 10),
                           Row(children: [
-                            Text("Balance: \$"),
-                            Text(''),
+                            Text("Balance: \$ "),
+                            Text(spending.toStringAsFixed(2)),
                           ]),
                         ],
                       ),
@@ -524,17 +549,15 @@ class _HomePageState extends State<HomePage> {
                         onChanged: (value) =>
                             amount = double.tryParse(value) ?? 0.0,
                         keyboardType: TextInputType.number,
-
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.add),
-                      onPressed: () async {
-                        addSpending();
-                        FocusScope.of(context).unfocus();
+                        icon: Icon(Icons.add),
+                        onPressed: () async {
+                          addSpending();
+                          FocusScope.of(context).unfocus();
 
-                      },
-                    ),
+                        }),
                   ],
                 ),
               ),
@@ -657,12 +680,13 @@ class _HomePageState extends State<HomePage> {
                                       print(
                                           '${task['taskId']} ${task['taskName']} ');
                                       // Go to Journal page
-                                    final result = await  Navigator.push(
+                                      final result = await Navigator.push(
                                         context,
                                         MaterialPageRoute(
-                                          builder: (context) => DetailedToDoPage(
+                                          builder: (context) =>
+                                              DetailedToDoPage(
                                             onColorUpdate: widget.onColorUpdate,
-                                          controller: widget.controller,
+                                            controller: widget.controller,
                                             taskId: task['taskId'],
                                           ),
                                         ),

@@ -135,7 +135,9 @@ class FirestoreService {
         'title': '',
         'description': '',
         'water': water,
-        'imagePath': ''
+        'imagePath': '',
+        'balance': 0,
+
       });
       print('Journal entry added successfully');
 
@@ -217,6 +219,8 @@ class FirestoreService {
         'water': document.get('water') ?? 0,
         'imagePath': document.get('imagePath') ?? '',
         'budget': document.get('budget') ?? 0,
+        'balance': document.get('balance') ?? 0,
+
       };
     } catch (e) {
       print('Error fetching journal entry: $e');
@@ -261,6 +265,8 @@ class FirestoreService {
         'entryDate': document.get('entryDate') ?? '',
         'water': document.get('water') ?? 0,
         'imagePath': document.get('imagePath') ?? '',
+        'balance': document.get('balance') ?? 0,
+
       };
     } catch (e) {
       print('Journal: Errorr fetching journal entry: $e for $userId');
