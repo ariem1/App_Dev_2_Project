@@ -8,7 +8,6 @@ import 'package:flutter/services.dart';
 //import 'package:android_intent_plus/android_intent.dart';
 import 'package:permission_handler/permission_handler.dart';
 
-
 class SettingsPage extends StatefulWidget {
   final String journalName;
   final ValueChanged<String> onNameUpdated;
@@ -59,7 +58,6 @@ class _SettingsPageState extends State<SettingsPage> {
     await _requestNotificationPermission();
   }
 
-
   Future<void> _requestNotificationPermission() async {
     if (await Permission.notification.isDenied) {
       print('Notifications denied');
@@ -75,11 +73,9 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-
-
   Future<void> _requestExactAlarmPermission() async {
     const platform = MethodChannel('com.example.exact_alarm_permission');
-  print('Notifications');
+    print('Notifications');
     try {
       // Check if permission is already granted
       final bool? isPermissionGranted =
@@ -96,8 +92,6 @@ class _SettingsPageState extends State<SettingsPage> {
       print("Error requesting exact alarm permission: $e");
     }
   }
-
-
 
   //
   // Future<void> _scheduleNotification() async {
@@ -161,7 +155,8 @@ class _SettingsPageState extends State<SettingsPage> {
 
     print("Notification will be displayed after ${delay.inSeconds} seconds.");
 
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+    const AndroidNotificationDetails androidDetails =
+    AndroidNotificationDetails(
       'journal_channel', // Channel ID
       'Journal Reminders', // Channel Name
       channelDescription: 'Scheduled Test Notification',
@@ -178,7 +173,8 @@ class _SettingsPageState extends State<SettingsPage> {
       await flutterLocalNotificationsPlugin.show(
         1, // Notification ID
         'Scheduled Reminder', // Notification Title
-        'This is your scheduled notification. ${scheduledTime.hour}: ${scheduledTime.minute} ', // Notification Body
+        'This is your scheduled notification. ${scheduledTime
+            .hour}: ${scheduledTime.minute} ', // Notification Body
         notificationDetails,
       );
 
@@ -191,12 +187,6 @@ class _SettingsPageState extends State<SettingsPage> {
 
     print("Notification scheduled for: $scheduledTime");
   }
-
-
-
-
-
-
 
   Future<void> _pickDateTime() async {
     DateTime? pickedDate = await showDatePicker(
@@ -226,7 +216,8 @@ class _SettingsPageState extends State<SettingsPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Selected Date: ${DateFormat('MMMM d, y - hh:mm a').format(_selectedDateTime!)}',
+              'Selected Date: ${DateFormat('MMMM d, y - hh:mm a').format(
+                  _selectedDateTime!)}',
             ),
           ),
         );
@@ -234,29 +225,32 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  Future<void> _showImmediateNotification() async {
-    const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-      'journal_channel', 'Journal Reminders',
-      channelDescription: 'Immediate Test Notification',
-      importance: Importance.high,
-      priority: Priority.high,
-      playSound: true,
-    );
-
-    const NotificationDetails notificationDetails =
-    NotificationDetails(android: androidDetails);
-
-    await flutterLocalNotificationsPlugin.show(
-      0, // Notification ID
-      'Test Notification',
-      'This is an immediate test notification',
-      notificationDetails,
-    );
-  }
-
+  // Future<void> _showImmediateNotification() async {
+  //   const AndroidNotificationDetails androidDetails =
+  //   AndroidNotificationDetails(
+  //     'journal_channel',
+  //     'Journal Reminders',
+  //     channelDescription: 'Immediate Test Notification',
+  //     importance: Importance.high,
+  //     priority: Priority.high,
+  //     playSound: true,
+  //   );
+  //
+  //   const NotificationDetails notificationDetails =
+  //   NotificationDetails(android: androidDetails);
+  //
+  //   await flutterLocalNotificationsPlugin.show(
+  //     0, // Notification ID
+  //     'Test Notification',
+  //     'This is an immediate test notification',
+  //     notificationDetails,
+  //   );
+  // }
 
   Future<void> fetchJournalName() async {
-    String? userId = fsService.getCurrentUser()?.uid;
+    String? userId = fsService
+        .getCurrentUser()
+        ?.uid;
 
     if (userId != null) {
       final docSnapshot = await fsService.getDocument(
@@ -267,6 +261,23 @@ class _SettingsPageState extends State<SettingsPage> {
         widget.onNameUpdated(docSnapshot.data()?['journalName']);
       });
     }
+  }
+
+  Widget _buildRadio(String value, String label, String? groupValue) {
+    return Row(
+      children: [
+        Radio<String>(
+          value: value,
+          groupValue: groupValue,
+          onChanged: (value) {
+            setState(() {
+              _selectedColor = value;
+            });
+          },
+        ),
+        Text(label),
+      ],
+    );
   }
 
   @override
@@ -281,7 +292,7 @@ class _SettingsPageState extends State<SettingsPage> {
           child: Column(
             children: [
               Container(
-                height: 350,
+                height: 400,
                 color: Colors.white70,
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
@@ -301,8 +312,16 @@ class _SettingsPageState extends State<SettingsPage> {
                     const SizedBox(height: 20),
                     const Text(
                       'Color',
-                      style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                          fontSize: 16, fontWeight: FontWeight.bold),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildRadio('Option 1', 'Blue', _selectedColor),
+                        _buildRadio('Option 2', 'Pink', _selectedColor),
+                        _buildRadio('Option 3', 'Purple', _selectedColor),
+                      ],
                     ),
                     const SizedBox(height: 20),
                     const Text(
@@ -310,10 +329,51 @@ class _SettingsPageState extends State<SettingsPage> {
                       style:
                       TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                     ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        _buildRadio('English', 'English', _selectedLanguage),
+                        _buildRadio('French', 'French', _selectedLanguage),
+                      ],
+                    ),
+                    SizedBox(height: 50,),
+                    ElevatedButton(
+                        onPressed: () async {
+                          String? userId = fsService.getCurrentUserId();
+
+                          // add the journal name to the db
+                          if (userId != null &&
+                              _journalNameController.text.isNotEmpty) {
+                            await fsService.updateJournalName(
+                                _journalNameController.text);
+                            print(
+                                'Settings: Journal name updates to ${_journalNameController
+                                    .text}');
+
+                            fetchJournalName();
+                          } else {
+                            print('Please enter a journal name.');
+                          }
+
+                          widget.onColorUpdate(_getColorFromOption(_selectedColor!));
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                  'Aura journal settings have been updated'),
+                              duration: Duration(seconds: 5),
+                            ),);
+                        }, child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Text('Update Settings'),
+                          ],
+                        )
+                    ),
                   ],
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: 30),
+
               TextButton(
                 onPressed: _pickDateTime,
                 child: const Text(
@@ -328,15 +388,23 @@ class _SettingsPageState extends State<SettingsPage> {
                 },
                 child: const Text('Enable Notification'),
               ),
-              ElevatedButton(
-                onPressed: _showImmediateNotification,
-                child: const Text('Test Immediate Notification'),
-              ),
+              // ElevatedButton(
+              //   onPressed: _showImmediateNotification,
+              //   child: const Text('Test Immediate Notification'),
+              // ),
 
-            ],
-          ),
+            ],),
         ),
       ),
     );
+  }
+
+  Color _getColorFromOption(String colorOption) {
+    if (colorOption == 'Option 2') {
+      return Colors.pink;
+    } else if (colorOption == 'Option 3') {
+      return Colors.purple;
+    }
+    return const Color(0xFFE3EFF9); // Default blue color
   }
 }

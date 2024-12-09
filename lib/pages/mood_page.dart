@@ -109,6 +109,7 @@ class _MoodPageState extends State<MoodPage> {
           return Center(child: CircularProgressIndicator());
         }
         if (!snapshot.hasData || snapshot.data!.isEmpty) {
+          print('No data');
           return Center(child: Text("No data available for ${months[month - 1]}"));
         }
 
@@ -130,7 +131,7 @@ class _MoodPageState extends State<MoodPage> {
                 if (quoteSnapshot.connectionState == ConnectionState.waiting)
                   CircularProgressIndicator()
                 else if (quoteSnapshot.hasError)
-                  Text("Failed to fetch quote.")
+                  Text("")
                 else
                   Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -225,7 +226,9 @@ class _MoodPageState extends State<MoodPage> {
 
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('journals')
-        .where('userId', isEqualTo: _fsService.getCurrentUserId())
+        // .where('userId', isEqualTo: _fsService.getCurrentUserId())
+     .where('userId', isEqualTo: '3iosUh9ccOSQAu7xWhKeVVVZ6Ei2')
+
         .get();
 
     for (var doc in querySnapshot.docs) {

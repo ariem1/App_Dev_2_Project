@@ -98,9 +98,14 @@ class _HomePageState extends State<HomePage> {
         _selectedMood = journalData['mood'];
         droplets = List.generate(
           (journalData['water'] as int),
-          (_) => Icon(Icons.water_drop_outlined,
-              size: MediaQuery.of(context).size.width * 0.01),
+          (_) => Icon(Icons.water_drop_outlined,size: 27)
+          //    size: MediaQuery.of(context).size.width * 0.04),
         );
+      });
+
+      setState(() {
+        droplets
+            .add(Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
       });
 
       print('Journal data loaded: $journalData');
@@ -451,7 +456,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                     IconButton(
                       icon: Icon(Icons.add),
-                      onPressed: droplets.length >=8
+                      onPressed: droplets.length >=7
                           ? null
                           : _addDroplet, // Disable if 8 droplets
                     ),

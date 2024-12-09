@@ -258,6 +258,7 @@ class FirestoreService {
 
       // Return all relevant fields in a map
       return {
+        'docId': document.id,
         'title': document.get('title') ?? '',
         'description': document.get('description') ?? '',
         'content': document.get('content') ?? '',
@@ -441,12 +442,12 @@ class FirestoreService {
     }
   }
 
-  Future<void> saveImageURLToFirestore(String imageURL) async {
+  Future<void> saveImageURLToFirestore(String imageURL, String journalId) async {
     try {
       await FirebaseFirestore.instance.collection('images').add({
         'url': imageURL,
         'uploadedAt': Timestamp.now(),
-        //'journalId':
+        'journalId': journalId
       });
       print('Image URL saved to Firestore successfully.');
     } catch (e) {

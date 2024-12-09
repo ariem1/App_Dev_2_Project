@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -29,6 +31,10 @@ class _JournalPageState extends State<JournalPage> {
   late String formattedNow;
   late String formattedSelectDate;
   double spending = 0.0;
+ String? journalId;
+  String? _imageURL;
+  bool _isLoading = true;
+
 
 
   // Controllers
@@ -68,26 +74,78 @@ class _JournalPageState extends State<JournalPage> {
   // Water droplet tracking
   List<Widget> droplets = [];
 
-  // Fetch and display journal data
   Future<void> _fetchJournalData() async {
-    print('Journal: fetching');
-    final data =
-        await _fsService.fetchJournalDataByDateAndUser(widget.selectedDate, widget.currentUserId);
+    setState(() {
+      _isLoading = true;
+    });
+
+    final data = await _fsService.fetchJournalDataByDateAndUser(
+      widget.selectedDate,
+      widget.currentUserId,
+    );
+
     if (data.isNotEmpty) {
       setState(() {
         _journalTitleController.text = data['title'] ?? '';
         _journalDescController.text = data['description'] ?? '';
         _entryController.text = data['content'] ?? '';
         spending = double.tryParse(data['balance']?.toString() ?? '0.0') ?? 0.0;
+        journalId = data['docId'];
+        _isLoading = false;
         // Initialize droplets based on fetched water count
         int waterCount = int.tryParse(data['water']?.toString() ?? '0') ?? 0;
         droplets = List.generate(
           waterCount,
-          (_) => Icon(Icons.water_drop_outlined, size: 30),
+              (_) => Icon(Icons.water_drop_outlined, size: 30),
         );
+      });
+      print(data['docId']);
+      journalId = data['docId'];
+
+      if (journalId != null) {
+        print('Not null');
+        _fetchImageURL(journalId!);
+      }
+    } else {
+      setState(() {
+        _isLoading = false;
       });
     }
   }
+
+
+  Future<void> _fetchImageURL(String journalId) async {
+    try {
+      // Query the 'images' collection to get the image URL
+      var querySnapshot = await FirebaseFirestore.instance
+          .collection('images')
+          .where('journalId', isEqualTo: journalId)
+          .get();
+
+      if (querySnapshot.docs.isNotEmpty) {
+        String imageUrl = querySnapshot.docs.first['url'];
+
+        setState(() {
+          _imageURL = imageUrl; // Store the image URL in the state
+          _isLoading = false;
+        });
+
+        print('Fetched Image URL: $_imageURL');
+      } else {
+        print('No image found for journalId: $journalId');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print('Error fetching image URL: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+
 
   // Save journal entry to the database
   Future<void> _saveJournalData() async {
@@ -116,7 +174,7 @@ class _JournalPageState extends State<JournalPage> {
       if (pickedFile != null) {
         // Step 2: Convert to File and set the state
         print('Image selected: ${pickedFile.path}');
-        setState(() async {
+        setState(() {
           _image = File(pickedFile.path);
 
 
@@ -130,7 +188,7 @@ class _JournalPageState extends State<JournalPage> {
 
         if (downloadURL != null) {
           // Step 4: Save the download URL to Firestore
-          await _fsService.saveImageURLToFirestore(downloadURL);
+          await _fsService.saveImageURLToFirestore(downloadURL, journalId!);
         } else {
           print('Failed to upload image to Firebase Storage.');
         }
@@ -199,6 +257,8 @@ class _JournalPageState extends State<JournalPage> {
   void initState() {
     super.initState();
     _fetchJournalData();
+   // _fetchImageURL(journalId!);
+
 
 
 
@@ -334,6 +394,19 @@ class _JournalPageState extends State<JournalPage> {
                                 ? Icon(Icons.add_a_photo,
                                     size: 40, color: Colors.blue)
                                 : Image.file(_image!, fit: BoxFit.cover),
+                            // child: _isLoading
+                            //     ? Center(child: CircularProgressIndicator())
+                            //     : _imageURL != null
+                            //     ? Image.network(
+                            //   _imageURL!,
+                            //   fit: BoxFit.cover,
+                            // )
+                            //     : Icon(
+                            //   Icons.add_a_photo,
+                            //   size: 40,
+                            //   color: Colors.blue,
+                            // ),
+
                           ),
                         ),
                       ],
@@ -372,22 +445,22 @@ class _JournalPageState extends State<JournalPage> {
                         ),
 
                         //IMAGE
-                        GestureDetector(
-                          onTap: _showImageOptions,
-                          child: Container(
-                            width: 150,
-                            height: 150,
-                            decoration: BoxDecoration(
-                              color: Colors.grey[200],
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.grey),
-                            ),
-                            child: _image == null
-                                ? Icon(Icons.add_a_photo,
-                                    size: 40, color: Colors.blue)
-                                : Image.file(_image!, fit: BoxFit.cover),
-                          ),
-                        ),
+                        // GestureDetector(
+                        //   onTap: _showImageOptions,
+                        //   child: Container(
+                        //     width: 150,
+                        //     height: 150,
+                        //     decoration: BoxDecoration(
+                        //       color: Colors.grey[200],
+                        //       borderRadius: BorderRadius.circular(12),
+                        //       border: Border.all(color: Colors.grey),
+                        //     ),
+                        //     child: _image == null
+                        //         ? Icon(Icons.add_a_photo,
+                        //             size: 40, color: Colors.blue)
+                        //         : Image.file(_image!, fit: BoxFit.cover),
+                        //   ),
+                        // ),
                       ],
                     ),
                   ),
