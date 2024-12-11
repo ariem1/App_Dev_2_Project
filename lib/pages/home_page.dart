@@ -95,7 +95,7 @@ class _HomePageState extends State<HomePage> {
 
       setState(() {
         _selectedMood = journalData['mood'];
-        spending = journalData['balance'];
+        spending = (journalData['balance']).toDouble() ;
         droplets = List.generate(
           waterCount,
               (_) => const Icon(
@@ -633,6 +633,7 @@ class _HomePageState extends State<HomePage> {
                         MaterialPageRoute(
                           builder: (context) => ToDoPage(
                             controller: widget.controller,
+                            onColorUpdate: widget.onColorUpdate,
                             currentUserId: currentUserId!,
                           ),
                         ),

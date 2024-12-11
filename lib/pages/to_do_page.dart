@@ -1,3 +1,4 @@
+import 'package:aura_journal/pages/detailed_to_do_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -7,9 +8,12 @@ import 'nav_bar.dart';
 class ToDoPage extends StatefulWidget {
   final PageController controller;
   final String currentUserId;
+  final void Function(Color) onColorUpdate;
+
 
   const ToDoPage(
-      {super.key, required this.controller, required this.currentUserId});
+      {super.key, required this.controller, required this.onColorUpdate,
+        required this.currentUserId});
 
   @override
   State<ToDoPage> createState() => _ToDoPageState();
@@ -120,25 +124,41 @@ class _ToDoPageState extends State<ToDoPage> {
                 },
               ),
               const SizedBox(width: 15),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    task['taskName'] ?? 'No Title',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+              GestureDetector(
+                onTap: () {
+                  // Go to View/Detailed To Do page
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => DetailedToDoPage(
+                        controller: widget.controller,
+                        taskId: task.id,
+                        onColorUpdate: widget.onColorUpdate,
+
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(
-                    task['description'] ?? 'No Description',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey,
+                  );
+                },
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      task['taskName'] ?? 'No Title',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 3),
+                    Text(
+                      task['description'] ?? 'No Description',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),

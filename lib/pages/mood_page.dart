@@ -216,9 +216,9 @@ class _MoodPageState extends State<MoodPage> {
 
   String _getMoodName(int moodIndex) {
     const moodNames = [
-      "anger", "sad", "neutral", "happy", "joyful"
+      "anger", "sad", "good", "happiness", "positive"
     ]; // Adjust to match your moods
-    return moodIndex >= 0 && moodIndex < moodNames.length ? moodNames[moodIndex] : "neutral";
+    return moodIndex >= 0 && moodIndex < moodNames.length ? moodNames[moodIndex] : "good";
   }
 
   Future<Map<int, int>> _getMonthlyMoodCounts(int year, int month) async {
@@ -226,8 +226,8 @@ class _MoodPageState extends State<MoodPage> {
 
     QuerySnapshot querySnapshot = await FirebaseFirestore.instance
         .collection('journals')
-        // .where('userId', isEqualTo: _fsService.getCurrentUserId())
-     .where('userId', isEqualTo: '3iosUh9ccOSQAu7xWhKeVVVZ6Ei2')
+        .where('userId', isEqualTo: _fsService.getCurrentUserId())
+     //.where('userId', isEqualTo: '3iosUh9ccOSQAu7xWhKeVVVZ6Ei2')
 
         .get();
 
@@ -344,23 +344,32 @@ class _MoodPageState extends State<MoodPage> {
   }
 
   //Code for fetch quote api
-  Future<String>fetchMoodQuote(String mood) async{
+  Future<String>fetchMoodQuote(String mood) async {
     const String baseUrl = "https://mood-based-quote-api.p.rapidapi.com/";
     const Map<String, String> headers = {
-      "X-RapidAPI-Key": "83586a7b1amshbd3b1190668f113peff0bjsn09a2cc3b7c60", // Replace with your actual API key
+      // API is sibscription-based with limited request calls
+      "X-RapidAPI-Key": "03f1bebfd2msh922f85a10aab7acp1fd5f1jsn306af198236e",
+      // Replaced with ne API key
       "X-RapidAPI-Host": "mood-based-quote-api.p.rapidapi.com"
     };
 
     final String url = "$baseUrl$mood";
+    bool test = true;
+    print("Url: ${url}");
 
-    final response = await http.get(Uri.parse(url), headers: headers);
+  //  if (test) {
+      final response = await http.get(Uri.parse(url), headers: headers);
+      print("Response Code: ${response.statusCode}");
+      print("Response Body: ${response.body}");
 
-    if (response.statusCode == 200) {
-      final data = jsonDecode(response.body);
-      return data['quote'] ?? "No quote found.";
-    } else {
-      throw Exception("Failed to fetch quote: ${response.reasonPhrase}");
-    }
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data['result'][0]['quote'] ?? "No quote found.";
+      } else {
+        throw Exception("Failed to fetch quote: ${response.reasonPhrase}");
+      }
+   // }
+ //   return "No quote found.";
   }
 
 

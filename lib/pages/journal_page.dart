@@ -257,7 +257,7 @@ class _JournalPageState extends State<JournalPage> {
   void initState() {
     super.initState();
     _fetchJournalData();
-   // _fetchImageURL(journalId!);
+   //_fetchImageURL(journalId!);
 
 
 
@@ -390,22 +390,18 @@ class _JournalPageState extends State<JournalPage> {
                               borderRadius: BorderRadius.circular(12),
                               border: Border.all(color: Colors.grey),
                             ),
-                            child: _image == null
-                                ? Icon(Icons.add_a_photo,
-                                    size: 40, color: Colors.blue)
-                                : Image.file(_image!, fit: BoxFit.cover),
-                            // child: _isLoading
-                            //     ? Center(child: CircularProgressIndicator())
-                            //     : _imageURL != null
-                            //     ? Image.network(
-                            //   _imageURL!,
-                            //   fit: BoxFit.cover,
-                            // )
-                            //     : Icon(
-                            //   Icons.add_a_photo,
-                            //   size: 40,
-                            //   color: Colors.blue,
-                            // ),
+                            child: _isLoading
+                                ? Center(child: CircularProgressIndicator())
+                                : _imageURL != null
+                                ? Image.network(
+                              _imageURL!,
+                              fit: BoxFit.cover,
+                            )
+                                : Icon(
+                              Icons.add_a_photo,
+                              size: 40,
+                              color: Colors.purple.shade100,
+                            ),
 
                           ),
                         ),
