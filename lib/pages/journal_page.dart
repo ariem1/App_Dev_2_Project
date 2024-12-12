@@ -116,7 +116,6 @@ class _JournalPageState extends State<JournalPage> {
 
   Future<void> _fetchImageURL(String journalId) async {
     try {
-      // Query the 'images' collection to get the image URL
       var querySnapshot = await FirebaseFirestore.instance
           .collection('images')
           .where('journalId', isEqualTo: journalId)
@@ -126,7 +125,7 @@ class _JournalPageState extends State<JournalPage> {
         String imageUrl = querySnapshot.docs.first['url'];
 
         setState(() {
-          _imageURL = imageUrl; // Store the image URL in the state
+          _imageURL = imageUrl;
           _isLoading = false;
         });
 
@@ -144,7 +143,6 @@ class _JournalPageState extends State<JournalPage> {
       });
     }
   }
-
 
 
   // Save journal entry to the database
@@ -257,10 +255,6 @@ class _JournalPageState extends State<JournalPage> {
   void initState() {
     super.initState();
     _fetchJournalData();
-   //_fetchImageURL(journalId!);
-
-
-
 
     formattedNow = DateFormat('yyyy-MM-dd').format(now);
     formattedSelectDate = DateFormat('yyyy-MM-dd').format(widget.selectedDate);
@@ -307,11 +301,6 @@ class _JournalPageState extends State<JournalPage> {
             return Center(
               child: Text('Error: ${snapshot.error}'),
             );
-            // } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-            //   return Center(
-            //     child: Text('No journal entry found.'),
-            //   );
-            //
           }
 
           late int mood;
@@ -440,23 +429,6 @@ class _JournalPageState extends State<JournalPage> {
                                 ),
                         ),
 
-                        //IMAGE
-                        // GestureDetector(
-                        //   onTap: _showImageOptions,
-                        //   child: Container(
-                        //     width: 150,
-                        //     height: 150,
-                        //     decoration: BoxDecoration(
-                        //       color: Colors.grey[200],
-                        //       borderRadius: BorderRadius.circular(12),
-                        //       border: Border.all(color: Colors.grey),
-                        //     ),
-                        //     child: _image == null
-                        //         ? Icon(Icons.add_a_photo,
-                        //             size: 40, color: Colors.blue)
-                        //         : Image.file(_image!, fit: BoxFit.cover),
-                        //   ),
-                        // ),
                       ],
                     ),
                   ),

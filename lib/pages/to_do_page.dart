@@ -1,4 +1,5 @@
 import 'package:aura_journal/pages/detailed_to_do_page.dart';
+import 'package:aura_journal/pages/home_page.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
@@ -23,6 +24,13 @@ class _ToDoPageState extends State<ToDoPage> {
 
 
   final FirestoreService _fsService = FirestoreService();
+  bool isTaskCompleted = false; // Initialize to false
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchTasks(); // Fetch tasks on initialization
+  }
 
   Stream<QuerySnapshot> _fetchTasks() {
     return FirebaseFirestore.instance.collection('tasks').snapshots();
@@ -36,6 +44,7 @@ class _ToDoPageState extends State<ToDoPage> {
     final pastTasks = <DocumentSnapshot>[];
 
     DateTime now = DateTime.now();
+    bool isTaskCompleted = false; // Initialize to false
 
     final taskByUserId =
         tasks.where((task) => task['userId'] == widget.currentUserId).toList();
@@ -96,6 +105,10 @@ class _ToDoPageState extends State<ToDoPage> {
 
     //Update task complete
     _fsService.updateTaskCompletion(taskId, isDone);
+    // Update the global variable
+    _fsService.fetchATask(taskId).then((updatedTask) {
+      Navigator.pop(context, updatedTask);
+    });
   }
 
   Widget _taskSection(String title, List<DocumentSnapshot> tasks) {
@@ -124,22 +137,24 @@ class _ToDoPageState extends State<ToDoPage> {
                 },
               ),
               const SizedBox(width: 15),
-              GestureDetector(
-                onTap: () {
-                  // Go to View/Detailed To Do page
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => DetailedToDoPage(
-                        controller: widget.controller,
-                        taskId: task.id,
-                        onColorUpdate: widget.onColorUpdate,
+              // GestureDetector(
+              //   onTap: () {
+              //     // Go to View/Detailed To Do page
+              //
+              //     Navigator.push(
+              //       context,
+              //       MaterialPageRoute(
+              //         builder: (context) => DetailedToDoPage(
+              //           controller: widget.controller,
+              //           taskId: task.id,
+              //           onColorUpdate: widget.onColorUpdate,
+              //
+              //         ),
+              //       ),
+              //     );
+              //   },
 
-                      ),
-                    ),
-                  );
-                },
-                child: Column(
+                Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -159,7 +174,7 @@ class _ToDoPageState extends State<ToDoPage> {
                     ),
                   ],
                 ),
-              ),
+
             ],
           ),
         );
@@ -172,6 +187,7 @@ class _ToDoPageState extends State<ToDoPage> {
     return Scaffold(
       appBar: AppBar(
         title: const Text("To-Do List"),
+
       ),
       body: StreamBuilder<QuerySnapshot>(
         stream: _fetchTasks(),

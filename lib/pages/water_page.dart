@@ -24,11 +24,12 @@ class _WaterPageState extends State<WaterPage> {
 
   Future<void> _fetchWaterProgress() async {
     try {
+
       String? userId = _fsService.getCurrentUser()?.uid; // Get current user ID
 
       if (userId != null) {
         // Safely fetch the journal ID for today's date
-        String? journalId = await _fsService.getJournalIdByUserIdAndDate_2(userId);
+        String? journalId = await _fsService.getJournalIdByUserIdAndDate_2(userId!);
 
         if (journalId != null) {
           final docSnapshot = await _fsService.getDocument(
@@ -41,9 +42,32 @@ class _WaterPageState extends State<WaterPage> {
 
             setState(() {
               counter = cupsDrank;
-              fillPercentage = cupsDrank < 8
-                  ? 1.0 - (cupsDrank / 8.0) // Calculate the remaining percentage
-                  : 0.0;
+              // fillPercentage = cupsDrank < 8
+              //     ? 1.0 - (cupsDrank / 8.0) // Calculate the remaining percentage
+              //     : 0.0;
+
+              fillPercentage = 1.0; // Always start with a full cup
+
+              if (counter >= 8 ){
+                fillPercentage = 0;
+                setState(() {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: Text("Congratulations!"),
+                      content: Text("You completed 8/8 cups of water for the day!"),
+                      actions: [
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text("OK"),
+                        ),
+                      ],
+                    ),
+                  );
+                });
+
+              }
+
             });
 
             print("Water progress updated: $cupsDrank cups.");
@@ -59,6 +83,8 @@ class _WaterPageState extends State<WaterPage> {
     setState(() {
       fillPercentage = (fillPercentage + 0.125).clamp(0.0, 1.0); // Restrict value to 0.0–1.0
     });
+
+  //  _fsService.updateJournalWater(journalId, water)
   }
 
   void decreaseFill() async {
@@ -165,7 +191,8 @@ class _WaterPageState extends State<WaterPage> {
                 ),
                 SizedBox(width: 20),
                 ElevatedButton(
-                  onPressed: decreaseFill,
+                  onPressed: counter >= 8 ? null :
+                  decreaseFill,
                   child: Text("Drink Water"),
                 ),
               ],

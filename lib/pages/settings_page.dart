@@ -93,54 +93,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  //
-  // Future<void> _scheduleNotification() async {
-  //   // Request exact alarm permission
-  //   await _requestExactAlarmPermission();
-  //   await _requestNotificationPermission();
-  //
-  //   if (_selectedDateTime == null) {
-  //     ScaffoldMessenger.of(context).showSnackBar(
-  //       const SnackBar(content: Text('Please select a date and time')),
-  //     );
-  //     return;
-  //   }
-  //
-  //   const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-  //     'journal_channel', // Channel ID
-  //     'Journal Reminders', // Channel Name
-  //     channelDescription: 'Reminders to log your journal',
-  //     importance: Importance.high,
-  //     priority: Priority.high,
-  //   );
-  //
-  //   const NotificationDetails notificationDetails =
-  //   NotificationDetails(android: androidDetails);
-  //
-  //   await flutterLocalNotificationsPlugin.zonedSchedule(
-  //     0,
-  //     'Reminder',
-  //     'Don’t forget to log your journal!',
-  //     tz.TZDateTime.from(_selectedDateTime!, tz.local),
-  //     notificationDetails,
-  //     androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
-  //     uiLocalNotificationDateInterpretation:
-  //     UILocalNotificationDateInterpretation.absoluteTime,
-  //   );
-  //
-  //
-  //   print("Notification scheduled for: $_selectedDateTime");
-  //
-  //   print("Current time: ${DateTime.now()}");
-  //   print("Scheduled time: $_selectedDateTime");
-  //
-  //
-  //   ScaffoldMessenger.of(context).showSnackBar(
-  //     const SnackBar(content: Text('Notification scheduled successfully')),
-  //   );
-  // }
-  //
-
   Future<void> _scheduleNotification(DateTime scheduledTime) async {
     // Calculate the delay in seconds between now and the scheduled time
     final Duration delay = scheduledTime.difference(DateTime.now());
@@ -225,28 +177,6 @@ class _SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // Future<void> _showImmediateNotification() async {
-  //   const AndroidNotificationDetails androidDetails =
-  //   AndroidNotificationDetails(
-  //     'journal_channel',
-  //     'Journal Reminders',
-  //     channelDescription: 'Immediate Test Notification',
-  //     importance: Importance.high,
-  //     priority: Priority.high,
-  //     playSound: true,
-  //   );
-  //
-  //   const NotificationDetails notificationDetails =
-  //   NotificationDetails(android: androidDetails);
-  //
-  //   await flutterLocalNotificationsPlugin.show(
-  //     0, // Notification ID
-  //     'Test Notification',
-  //     'This is an immediate test notification',
-  //     notificationDetails,
-  //   );
-  // }
-
   Future<void> fetchJournalName() async {
     String? userId = fsService
         .getCurrentUser()
@@ -286,110 +216,112 @@ class _SettingsPageState extends State<SettingsPage> {
       appBar: AppBar(
         title: const Text('Settings'),
       ),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            children: [
-              Container(
-                height: 400,
-                color: Colors.white70,
-                padding: const EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Journal Name',
-                      style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    const SizedBox(height: 8),
-                    TextField(
-                      controller: _journalNameController,
-                      decoration:
-                      const InputDecoration(border: OutlineInputBorder()),
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Color',
-                      style: TextStyle(
-                          fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildRadio('Option 1', 'Blue', _selectedColor),
-                        _buildRadio('Option 2', 'Pink', _selectedColor),
-                        _buildRadio('Option 3', 'Purple', _selectedColor),
-                      ],
-                    ),
-                    const SizedBox(height: 20),
-                    const Text(
-                      'Language',
-                      style:
-                      TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-                    ),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildRadio('English', 'English', _selectedLanguage),
-                        _buildRadio('French', 'French', _selectedLanguage),
-                      ],
-                    ),
-                    SizedBox(height: 50,),
-                    ElevatedButton(
-                        onPressed: () async {
-                          String? userId = fsService.getCurrentUserId();
+      body: SingleChildScrollView(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(20.0),
+            child: Column(
+              children: [
+                Container(
+                  height: 400,
+                  color: Colors.white70,
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Journal Name',
+                        style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      TextField(
+                        controller: _journalNameController,
+                        decoration:
+                        const InputDecoration(border: OutlineInputBorder()),
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Color',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildRadio('Option 1', 'Blue', _selectedColor),
+                          _buildRadio('Option 2', 'Pink', _selectedColor),
+                          _buildRadio('Option 3', 'Purple', _selectedColor),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      const Text(
+                        'Language',
+                        style:
+                        TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                      ),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                        children: [
+                          _buildRadio('English', 'English', _selectedLanguage),
+                          _buildRadio('French', 'French', _selectedLanguage),
+                        ],
+                      ),
+                      SizedBox(height: 50,),
+                      ElevatedButton(
+                          onPressed: () async {
+                            String? userId = fsService.getCurrentUserId();
 
-                          // add the journal name to the db
-                          if (userId != null &&
-                              _journalNameController.text.isNotEmpty) {
-                            await fsService.updateJournalName(
-                                _journalNameController.text);
-                            print(
-                                'Settings: Journal name updates to ${_journalNameController
-                                    .text}');
+                            // add the journal name to the db
+                            if (userId != null &&
+                                _journalNameController.text.isNotEmpty) {
+                              await fsService.updateJournalName(
+                                  _journalNameController.text);
+                              print(
+                                  'Settings: Journal name updates to ${_journalNameController
+                                      .text}');
 
-                            fetchJournalName();
-                          } else {
-                            print('Please enter a journal name.');
-                          }
+                              fetchJournalName();
+                            } else {
+                              print('Please enter a journal name.');
+                            }
 
-                          widget.onColorUpdate(_getColorFromOption(_selectedColor!));
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text(
-                                  'Aura journal settings have been updated'),
-                              duration: Duration(seconds: 5),
-                            ),);
-                        }, child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Text('Update Settings'),
-                          ],
-                        )
-                    ),
-                  ],
+                            widget.onColorUpdate(_getColorFromOption(_selectedColor!));
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                    'Aura journal settings have been updated'),
+                                duration: Duration(seconds: 5),
+                              ),);
+                          }, child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              const Text('Update Settings'),
+                            ],
+                          )
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 30),
+                const SizedBox(height: 30),
 
-              TextButton(
-                onPressed: _pickDateTime,
-                child: const Text(
-                  'Select Notification Time',
-                  style: TextStyle(color: Colors.lightBlue),
+                TextButton(
+                  onPressed: _pickDateTime,
+                  child: const Text(
+                    'Select Notification Time',
+                    style: TextStyle(color: Colors.lightBlue),
+                  ),
                 ),
-              ),
-              ElevatedButton(
-                onPressed: () {
-                  DateTime scheduledTime = _selectedDateTime!;
-                  _scheduleNotification(scheduledTime);
-                },
-                child: const Text('Enable Notification'),
-              ),
+                ElevatedButton(
+                  onPressed: () {
+                    DateTime scheduledTime = _selectedDateTime!;
+                    _scheduleNotification(scheduledTime);
+                  },
+                  child: const Text('Enable Notification'),
+                ),
 
-            ],),
+              ],),
+          ),
         ),
       ),
     );

@@ -1,3 +1,4 @@
+import 'package:aura_journal/pages/home_page.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -46,13 +47,7 @@ class _DetailedToDoPageState extends State<DetailedToDoPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed: () => Navigator.pop(context),
-          ),
-        ],
+        automaticallyImplyLeading: true,
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())

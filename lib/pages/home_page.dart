@@ -115,6 +115,8 @@ class _HomePageState extends State<HomePage> {
   bool isLoading = true;
 
   Future<void> _getTasks() async {
+    print('1 fetching tasks');
+
     try {
       final taskData = await _fsService.fetchAllTasksByUser(currentUserId!);
 
@@ -122,6 +124,7 @@ class _HomePageState extends State<HomePage> {
         tasks = taskData;
         isLoading = false;
       });
+      print('fetching tasks');
     } catch (e) {
       print('Error fetching tasks: $e');
       setState(() {
@@ -209,6 +212,77 @@ class _HomePageState extends State<HomePage> {
 
   TextEditingController taskController = TextEditingController();
 
+  /* FIREBASE STUFF */
+// Check if journal entry exists for today
+  Future<bool> _checkJournalEntry() async {
+    bool journalExists =
+        await _fsService.journalEntryExistsForToday(currentUserId!);
+    print('Journal exists: $journalExists');
+
+    return journalExists;
+  }
+
+  // List to store water drop icons
+  List<Widget> droplets = [];
+
+  void _addDroplet() async {
+
+    if (droplets.length >= 7) {
+      print(droplets.length);
+
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: Text("Congratulations!"),
+          content: Text("You have completed 8 cups of water for the day!"),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text("OK"),
+            ),
+          ],
+        ),
+      );
+
+        // Increment the cup count in Firestore
+        await _fsService.incrementCupsDrank(todaysJournalId!);
+      setState(() {
+        droplets.add(
+            Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
+      });
+        // // Reset droplets
+        // setState(() {
+        //   droplets.clear();
+        // });
+
+        print("Completed a cup! Droplets reset.");
+      // }
+
+      return;
+    } else {
+      if(droplets.length < 7 ){
+        setState(() {
+          droplets.add(
+              Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
+        });
+      }
+
+    }
+
+    print("Current droplets: ${droplets.length}");
+
+    bool journalExists = await _checkJournalEntry();
+
+    if (!journalExists) {
+      await _fsService.addJournalEntry(droplets.length, 5, '', currentUserId!);
+      print('Journal entry created and water added');
+    } else {
+      _fsService.updateJournalWater(todaysJournalId!, droplets.length);
+    }
+
+
+  }
+
   // Add task to the firebase
   void addTask(String userId, String task) async {
     if (taskController.text.isNotEmpty) {
@@ -231,71 +305,6 @@ class _HomePageState extends State<HomePage> {
         taskController.clear();
       }
     }
-  }
-
-  /* FIREBASE STUFF */
-// Check if journal entry exists for today
-  Future<bool> _checkJournalEntry() async {
-    bool journalExists =
-        await _fsService.journalEntryExistsForToday(currentUserId!);
-    print('Journal exists: $journalExists');
-
-    return journalExists;
-  }
-
-  // List to store water drop icons
-  List<Widget> droplets = [];
-
-  void _addDroplet() async {
-
-    if (droplets.length >= 7) {
-      print(droplets.length);
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text("Congratulations!"),
-          content: Text("You have completed 8 cups of water for the day!"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text("OK"),
-            ),
-          ],
-        ),
-      );
-
-        // Increment the cup count in Firestore
-        await _fsService.incrementCupsDrank(todaysJournalId!);
-
-        // Reset droplets
-        setState(() {
-          droplets.clear();
-        });
-
-        print("Completed a cup! Droplets reset.");
-      // }
-
-      return;
-    } else {
-
-      setState(() {
-        droplets.add(
-            Icon(Icons.water_drop_outlined, size: 27)); // Add a new droplet
-      });
-    }
-
-    print("Current droplets: ${droplets.length}");
-
-    bool journalExists = await _checkJournalEntry();
-
-    if (!journalExists) {
-      await _fsService.addJournalEntry(droplets.length, 5, '', currentUserId!);
-      print('Journal entry created and water added');
-    } else {
-      _fsService.updateJournalWater(todaysJournalId!, droplets.length);
-    }
-
-
   }
 
   /////////////// MOOD ///////////////////
@@ -455,8 +464,11 @@ class _HomePageState extends State<HomePage> {
                       ),
                     ),
                     IconButton(
-                      icon: Icon(Icons.add),
-                       onPressed:  _addDroplet,
+                      onPressed: droplets.length >= 8
+                          ? null // Disable button when 8 droplets are reached
+                          : _addDroplet, // Call _addDroplet function if not
+                      icon: const Icon(Icons.add),
+               //       tooltip: droplets.length >= 8 ? "Maximum 8 cups reached" : "Add Droplet",
                     ),
                   ],
                 ),
@@ -631,12 +643,19 @@ class _HomePageState extends State<HomePage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ToDoPage(
-                            controller: widget.controller,
-                            onColorUpdate: widget.onColorUpdate,
-                            currentUserId: currentUserId!,
-                          ),
+                          builder: (context) =>
+                              ToDoPage(
+                                controller: widget.controller,
+                                onColorUpdate: widget.onColorUpdate,
+                                currentUserId: currentUserId!,
+                              ),
                         ),
+                      ).then((updatedTask) {
+                        if (updatedTask != null) {
+                          _getTasks();
+
+                        }
+                      },
                       );
                     },
                     child: Text(
@@ -669,7 +688,7 @@ class _HomePageState extends State<HomePage> {
                               child: ListTile(
                                 leading: Checkbox(
                                   value: task['done'] ?? false,
-                                  onChanged: (bool? value) {
+                                  onChanged: (value) {
                                     _toggleTaskComplete(
                                         index, task['taskId'], value!);
                                   },
@@ -745,6 +764,7 @@ class _HomePageState extends State<HomePage> {
                     ),
                   ),
                   IconButton(
+
                     onPressed: () {
                       addTask(currentUserId!, taskController.text.trim());
                       FocusScope.of(context).unfocus();
